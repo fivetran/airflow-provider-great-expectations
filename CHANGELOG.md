@@ -1,5 +1,10 @@
 # Apache Airflow Provider for Great Expectations
 
+## 2.0.0a1 (2026-10-12)
+* [FEATURE] Add support for Airflow v3.3; drop support for Airflow < v3.1.3
+* [FEATURE] Add Trino connection support
+* [MAINTENANCE] Use VERSION from constants.py during releases
+
 ## 1.0.0 (2026-01-26)
 * [FEATURE] Workspace ID + GXCloud connection by @joshua-stauffer in #222
 * [FEATURE] Refactor `expect` parameter to `configure_expectations` by @joshua-stauffer in #229

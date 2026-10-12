@@ -8,10 +8,10 @@ Releases are triggered by creating a GitHub Release. The workflow automatically 
 
 ### 1. Update Version
 
-Update the version in `great_expectations_provider/__init__.py`:
+Update the version in `great_expectations_provider/common/contants.py`:
 
 ```python
-__version__ = "X.Y.Z"
+VERSION = "X.Y.Z"
 ```
 
 Follow [Semantic Versioning](https://semver.org/):
@@ -38,7 +38,7 @@ Example:
 Commit the version and changelog updates, then merge the PR to `main`:
 
 ```bash
-git add great_expectations_provider/__init__.py CHANGELOG.md
+git add great_expectations_provider/common/constants.py CHANGELOG.md
 git commit -m "chore: prepare release X.Y.Z"
 git push origin <your-branch>
 # Create PR and merge to main
@@ -57,7 +57,7 @@ git tag -a X.Y.Z -m "Release version X.Y.Z"
 git push origin X.Y.Z
 ```
 
-**Important**: The tag name must match the version in `__init__.py` exactly (e.g., if version is `1.0.0`, tag should be `1.0.0`).
+**Important**: The tag name must match the `VERSION` in `common/constants.py` exactly (e.g., if version is `1.0.0`, tag should be `1.0.0`).
 
 ### 5. Create GitHub Release
 
@@ -74,10 +74,10 @@ git push origin X.Y.Z
 
 Once the GitHub Release is created, the CI workflow will automatically:
 
-1. **Verify Version**: Check that the version in `__init__.py` matches the release tag
+1. **Verify Version**: Check that the version in `common/constants.py` matches the release tag
 2. **Build Package**: Create wheel and source distribution using `uv build`
 3. **Publish to PyPI**: Upload to PyPI using `uv publish` with trusted publishing
-4. **Deploy Documentation**: 
+4. **Deploy Documentation**:
    - For stable releases (non-pre-release versions): Deploy to `latest` alias and set as default
    - For pre-releases: Deploy to `dev` branch
 
