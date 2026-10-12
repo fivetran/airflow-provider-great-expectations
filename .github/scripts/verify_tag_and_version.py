@@ -7,9 +7,11 @@ from pathlib import Path
 
 repo_dir = Path(__file__).parent.parent.parent
 
-path_of_init_file = Path(repo_dir / "great_expectations_provider" / "__init__.py")
-version_file = path_of_init_file.read_text()
-version = re.findall('__version__ = "(.*)"', version_file)[0]
+path_of_constants = Path(
+    repo_dir / "great_expectations_provider" / "common" / "constants.py"
+)
+version_file = path_of_constants.read_text()
+version = re.findall('VERSION = "(.*)"', version_file)[0]
 
 git_tag_name = os.getenv("GITHUB_TAG_NAME", "")
 
@@ -18,5 +20,6 @@ if not git_tag_name:
 
 if version != git_tag_name:
     raise SystemExit(
-        f"The version in {path_of_init_file} ({version}) does not match the Git Tag ({git_tag_name})."
+        f"The version in {path_of_constants} ({version}) does not match "
+        f"the Git Tag ({git_tag_name})."
     )
