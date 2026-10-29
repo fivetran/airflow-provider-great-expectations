@@ -1,0 +1,60 @@
+name: Upstream drift
+
+on:
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - .github/support-matrix.toml
+      - .github/scripts/support_matrix.py
+      - .github/scripts/pypi_upstream.py
+      - .github/workflows/upstream-drift.yml
+
+permissions: {}
+
+jobs:
+  drift:
+    name: Upstream drift
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Emit support matrix outputs
+        id: matrix
+        run: python3 .github/scripts/support_matrix.py emit
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ steps.matrix.outputs.uv-version }}
+          enable-cache: false
+        id: uv
+      - name: Check upstream drift
+        shell: bash
+        run: |
+          set +e
+          uv run --no-project --with-requirements .github/scripts/requirements.txt \
+            python .github/scripts/pypi_upstream.py drift 2>&1 | tee /tmp/upstream-drift.txt
+          result=${PIPESTATUS[0]}
+          {
+            echo '### Upstream drift findings'
+            cat /tmp/upstream-drift.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$result"
+
+  report:
+    name: Report scheduled failure
+    needs: drift
+    if: always() && needs.drift.result == 'failure' && github.event_name == 'schedule'
+    uses: ./.github/workflows/report-scheduled-failure.yml # zizmor: ignore[self-repository] actionlint 1.7.12 does not yet parse $/ syntax; ./ resolves the called workflow from the caller's commit.
+    permissions:
+      issues: write
+    with:
+      workflow: ${{ github.workflow }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

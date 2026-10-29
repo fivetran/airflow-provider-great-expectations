@@ -1,0 +1,55 @@
+name: Report scheduled failure
+
+on:
+  workflow_call:
+    inputs:
+      workflow:
+        description: Name of the failed scheduled workflow
+        required: true
+        type: string
+      run-url:
+        description: URL of the failed workflow run
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: scheduled-failure-${{ inputs.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Report scheduled failure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      WORKFLOW_NAME: ${{ inputs.workflow }}
+      RUN_URL: ${{ inputs.run-url }}
+      ISSUE_TITLE: "Scheduled CI failure: ${{ inputs.workflow }}"
+      GUIDE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/.github/CI.md
+    steps:
+      - name: Find or create tracking issue
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_number=""
+          search_query="\"${ISSUE_TITLE}\" in:title"
+          open_issues=$(gh issue list --state open --search "$search_query" --limit 1000 --json number,title --jq '.[] | [.number, .title] | @tsv')
+          while IFS=$'\t' read -r candidate_number candidate_title; do
+            if [[ "$candidate_title" == "$ISSUE_TITLE" ]]; then
+              issue_number="$candidate_number"
+              break
+            fi
+          done <<< "$open_issues"
+
+          if [[ -n "$issue_number" ]]; then
+            gh issue comment "$issue_number" --body "Scheduled workflow **${WORKFLOW_NAME}** failed: ${RUN_URL}"
+          else
+            body=$(printf 'Scheduled workflow **%s** failed.\n\nRun: %s\n\nSee [the CI guide](%s) for the maintainer checklist.' "$WORKFLOW_NAME" "$RUN_URL" "$GUIDE_URL")
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
