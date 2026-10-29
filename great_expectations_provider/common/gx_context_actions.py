@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal
 
 from great_expectations_provider.common.constants import USER_AGENT_STR
 
@@ -12,8 +12,6 @@ if TYPE_CHECKING:
     )
     from great_expectations.data_context import AbstractDataContext
     from great_expectations.expectations import Expectation
-
-    from great_expectations_provider.hooks.gx_cloud import GXCloudConfig
 
 
 def run_validation_definition(
@@ -51,23 +49,11 @@ def run_validation_definition(
     return result
 
 
-def load_data_context(
-    context_type: Literal["ephemeral", "cloud"],
-    gx_cloud_config: Union[GXCloudConfig, None],
-) -> AbstractDataContext:
+def load_data_context() -> AbstractDataContext:
+    """Return a new ephemeral GX data context tagged with the provider's user agent.
+
+    The mode is passed explicitly so GX never infers a context type from the environment.
+    """
     import great_expectations as gx
 
-    if context_type == "cloud" and gx_cloud_config:
-        return gx.get_context(
-            mode="cloud",
-            cloud_access_token=gx_cloud_config.cloud_access_token,
-            cloud_organization_id=gx_cloud_config.cloud_organization_id,
-            cloud_workspace_id=gx_cloud_config.cloud_workspace_id,
-            user_agent_str=USER_AGENT_STR,
-        )
-    else:
-        # EphemeralDataContext or CloudDataContext with env vars
-        return gx.get_context(
-            mode=context_type,
-            user_agent_str=USER_AGENT_STR,
-        )
+    return gx.get_context(mode="ephemeral", user_agent_str=USER_AGENT_STR)

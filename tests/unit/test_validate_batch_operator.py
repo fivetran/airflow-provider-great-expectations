@@ -217,11 +217,10 @@ class TestValidateBatchOperator:
         # check the result of the first (only) expectation
         assert pushed_result["expectations"][0]["result"] == expected_result
 
-    def test_context_type_ephemeral(self, mock_gx: Mock):
-        """Expect that param context_type creates an EphemeralDataContext."""
-        # arrange
-        context_type: Literal["ephemeral"] = "ephemeral"
+    def test_uses_ephemeral_context(self, mock_gx: Mock):
+        """Expect that the operator uses an ephemeral context."""
 
+        # arrange
         def configure_expectations(context: AbstractDataContext) -> Mock:
             return Mock()
 
@@ -230,7 +229,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=lambda context: Mock(),
             configure_expectations=configure_expectations,
             batch_parameters={"dataframe": Mock()},
-            context_type=context_type,
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -240,34 +238,7 @@ class TestValidateBatchOperator:
 
         # assert
         mock_gx.get_context.assert_called_once_with(
-            mode=context_type,
-            user_agent_str=USER_AGENT_STR,
-        )
-
-    def test_context_type_cloud(self, mock_gx: Mock):
-        """Expect that param context_type creates a CloudDataContext."""
-        # arrange
-        context_type: Literal["cloud"] = "cloud"
-
-        def configure_expectations(context: AbstractDataContext) -> Mock:
-            return Mock()
-
-        validate_batch = GXValidateBatchOperator(
-            task_id="validate_batch_success",
-            configure_batch_definition=lambda context: Mock(),
-            configure_expectations=configure_expectations,
-            batch_parameters={"dataframe": Mock()},
-            context_type=context_type,
-        )
-        mock_ti = Mock()
-        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
-
-        # act
-        validate_batch.execute(context=context)
-
-        # assert
-        mock_gx.get_context.assert_called_once_with(
-            mode=context_type,
+            mode="ephemeral",
             user_agent_str=USER_AGENT_STR,
         )
 
@@ -293,7 +264,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=lambda context: mock_batch_definition,
             configure_expectations=configure_expectations,
             batch_parameters=batch_parameters,
-            context_type="ephemeral",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -329,7 +299,6 @@ class TestValidateBatchOperator:
             task_id="validate_batch_success",
             configure_batch_definition=lambda context: mock_batch_definition,
             configure_expectations=configure_expectations_suite,
-            context_type="ephemeral",
         )
         mock_ti = Mock()
         context: Context = {
@@ -374,7 +343,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=lambda context: mock_batch_definition,
             configure_expectations=configure_expectations_suite,
             batch_parameters=init_batch_parameters,
-            context_type="ephemeral",
         )
         mock_ti = Mock()
         context: Context = {
@@ -412,7 +380,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=lambda context: mock_batch_definition,
             configure_expectations=configure_expectations_suite,
             batch_parameters=Mock(),
-            context_type="ephemeral",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]

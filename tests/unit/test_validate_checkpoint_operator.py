@@ -21,6 +21,30 @@ pytestmark = pytest.mark.unit
 
 
 class TestValidateCheckpointOperator:
+    def test_context_type_rejects_unsupported_value(
+        self, mocker: MockerFixture
+    ) -> None:
+        # arrange
+        unsupported_context_type = "unsupported"
+        configure_checkpoint = Mock()
+        create_context = mocker.patch(
+            "great_expectations_provider.operators.validate_checkpoint.load_data_context"
+        )
+
+        # act/assert
+        with pytest.raises(
+            ValueError,
+            match="Parameter `context_type` must be 'ephemeral' or 'file', got 'unsupported'",
+        ):
+            GXValidateCheckpointOperator(
+                task_id="validate_checkpoint",
+                configure_checkpoint=configure_checkpoint,
+                context_type=unsupported_context_type,  # type: ignore[arg-type]
+            )
+
+        configure_checkpoint.assert_not_called()
+        create_context.assert_not_called()
+
     def test_validate_dataframe(self) -> None:
         # arrange
         column_name = "col_A"
@@ -63,7 +87,7 @@ class TestValidateCheckpointOperator:
 
         df = pd.DataFrame({column_name: ["a", "b", "c"]})
 
-        validate_cloud_checkpoint = GXValidateCheckpointOperator(
+        validate_checkpoint = GXValidateCheckpointOperator(
             task_id="validate_checkpoint",
             configure_checkpoint=configure_checkpoint,
             batch_parameters={"dataframe": df},
@@ -72,7 +96,7 @@ class TestValidateCheckpointOperator:
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
 
         # act
-        validate_cloud_checkpoint.execute(context=context)
+        validate_checkpoint.execute(context=context)
 
         # assert
         # Get the result from xcom_push call
@@ -95,28 +119,6 @@ class TestValidateCheckpointOperator:
         context: Context = {"ti": Mock()}  # type: ignore[typeddict-item]
 
         # act
-        validate_checkpoint.execute(context=context)
-
-        # assert
-        mock_gx.get_context.assert_called_once_with(
-            mode=context_type, user_agent_str=USER_AGENT_STR
-        )
-
-    def test_context_type_cloud(self, mocker: MockerFixture) -> None:
-        """Expect that param context_type creates a CloudDataContext."""
-        # arrange
-        context_type: Literal["cloud"] = "cloud"
-        configure_checkpoint = Mock()
-        mock_gx = Mock()
-        mocker.patch.dict("sys.modules", {"great_expectations": mock_gx})
-        validate_checkpoint = GXValidateCheckpointOperator(
-            task_id="validate_checkpoint_success",
-            configure_checkpoint=configure_checkpoint,
-            context_type=context_type,
-        )
-
-        # act
-        context: Context = {"ti": Mock()}  # type: ignore[typeddict-item]
         validate_checkpoint.execute(context=context)
 
         # assert
