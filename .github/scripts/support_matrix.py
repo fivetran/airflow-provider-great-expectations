@@ -335,6 +335,24 @@ def typecheck_targets(matrix: SupportMatrix) -> tuple[TypecheckTarget, ...]:
     return tuple(targets)
 
 
+def render_table(matrix: SupportMatrix) -> str:
+    """Render the checked-in compatibility table from the support matrix."""
+    lines = [
+        "<!-- Generated from `.github/support-matrix.toml`; run `python .github/scripts/support_matrix.py render --write`. -->",
+        "| Airflow | Tested release | Python tested in CI | Python supported by this Airflow line |",
+        "| --- | --- | --- | --- |",
+    ]
+    lanes = derive_lanes(matrix)
+    for airflow in reversed(matrix.airflow):
+        tested_python = [lane.python for lane in lanes if lane.line == airflow.line]
+        supported = airflow.python
+        lines.append(
+            f"| {airflow.line} | {airflow.release} | {', '.join(tested_python)} | "
+            f"{supported[0]}–{supported[-1]} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def _lane_dict(lane: Lane) -> dict[str, object]:
     return {
         "id": lane.id,
@@ -406,9 +424,16 @@ def main(argv: list[str] | None = None) -> int:
         Path(__file__).resolve().parents[2] / ".github" / "support-matrix.toml"
     )
     parser = argparse.ArgumentParser(description="Validate or emit support matrix data")
-    parser.add_argument("command", nargs="?", choices=("emit",))
+    parser.add_argument("command", nargs="?", choices=("emit", "render"))
     parser.add_argument(
         "--matrix", type=Path, default=default_path, help="matrix TOML file"
+    )
+    render_mode = parser.add_mutually_exclusive_group()
+    render_mode.add_argument(
+        "--write", action="store_true", help="write rendered fragment"
+    )
+    render_mode.add_argument(
+        "--check", action="store_true", help="check rendered fragment"
     )
     parser.add_argument(
         "--output",
@@ -421,7 +446,29 @@ def main(argv: list[str] | None = None) -> int:
     except MatrixError as exc:
         print(f"{args.matrix}: {exc}", file=sys.stderr)
         return 2
+    if args.command == "render":
+        if not (args.write or args.check):
+            parser.error("render requires --write or --check")
+        fragment = Path(__file__).resolve().parents[1] / "support-matrix.md"
+        rendered = render_table(matrix)
+        if args.write:
+            fragment.write_text(rendered, encoding="utf-8")
+            return 0
+        try:
+            current = fragment.read_text(encoding="utf-8")
+        except OSError:
+            current = ""
+        if current != rendered:
+            print(
+                "support-matrix.md is stale or missing; regenerate it with "
+                "`python .github/scripts/support_matrix.py render --write`",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
     if args.command == "emit":
+        if args.write or args.check:
+            parser.error("render options require the render command")
         values = _outputs(matrix)
         rendered = "".join(f"{key}={value}\n" for key, value in values.items())
         output_path = args.output or (

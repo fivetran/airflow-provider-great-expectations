@@ -363,3 +363,79 @@ def test_emit_writes_all_matrix_outputs(
     }
     assert lowest_direct[1]["airflow"] == "3.2.2"
     assert lowest_direct[1]["python"] == "3.14"
+
+
+def test_render_table_has_four_columns_and_newest_line_first(support_matrix_module):
+    matrix = support_matrix_module.load(MATRIX_PATH)
+
+    rendered = support_matrix_module.render_table(matrix)
+
+    assert rendered.startswith(
+        "<!-- Generated from `.github/support-matrix.toml`; run "
+        "`python .github/scripts/support_matrix.py render --write`. -->\n"
+        "| Airflow | Tested release | Python tested in CI | "
+        "Python supported by this Airflow line |\n"
+        "| --- | --- | --- | --- |\n"
+    )
+    assert "| 3.3 | 3.3.2 | 3.11, 3.12, 3.13, 3.14 | 3.11–3.14 |" in rendered
+    assert "| 3.0 | 3.0.6 | 3.11 | 3.11–3.12 |" in rendered
+    assert rendered.index("| 3.3 |") < rendered.index("| 3.2 |")
+    assert rendered.index("| 3.2 |") < rendered.index("| 3.1 |")
+
+
+def test_render_table_is_stable(support_matrix_module):
+    matrix = support_matrix_module.load(MATRIX_PATH)
+
+    assert support_matrix_module.render_table(
+        matrix
+    ) == support_matrix_module.render_table(matrix)
+
+
+def test_render_write_and_check_cli_and_stale_detection(tmp_path):
+    scratch_github = tmp_path / ".github"
+    scratch_scripts = scratch_github / "scripts"
+    scratch_scripts.mkdir(parents=True)
+    scratch_script = scratch_scripts / "support_matrix.py"
+    scratch_script.write_bytes(SCRIPT_PATH.read_bytes())
+    matrix_path = scratch_github / "support-matrix.toml"
+    fragment_path = scratch_github / "support-matrix.md"
+    matrix_path.write_bytes(MATRIX_PATH.read_bytes())
+
+    write_result = subprocess.run(
+        [
+            sys.executable,
+            str(scratch_script),
+            "render",
+            "--matrix",
+            str(matrix_path),
+            "--write",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert write_result.returncode == 0, write_result.stderr
+
+    check_command = [
+        sys.executable,
+        str(scratch_script),
+        "render",
+        "--matrix",
+        str(matrix_path),
+        "--check",
+    ]
+    current_result = subprocess.run(
+        check_command, check=False, capture_output=True, text=True
+    )
+    assert current_result.returncode == 0, current_result.stderr
+
+    matrix_path.write_text(
+        matrix_path.read_text().replace('release = "3.3.2"', 'release = "3.3.3"')
+    )
+    stale_result = subprocess.run(
+        check_command, check=False, capture_output=True, text=True
+    )
+    assert stale_result.returncode == 1
+    assert (
+        "python .github/scripts/support_matrix.py render --write" in stale_result.stderr
+    )
