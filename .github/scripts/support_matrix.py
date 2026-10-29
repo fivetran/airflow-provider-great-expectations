@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -353,6 +354,274 @@ def render_table(matrix: SupportMatrix) -> str:
     return "\n".join(lines) + "\n"
 
 
+@dataclass(frozen=True)
+class Disagreement:
+    rule: str
+    source: str
+    field: str
+    expected: str
+    actual: str
+    hint: str
+
+
+def check_consistency(matrix: SupportMatrix, repo_root: Path) -> list[Disagreement]:
+    """Compare package metadata, checked-in fragments and compose with the matrix."""
+    from packaging.requirements import Requirement
+    from packaging.specifiers import InvalidSpecifier, SpecifierSet
+    from packaging.version import Version
+
+    findings: list[Disagreement] = []
+
+    def add(
+        rule: str, source: str, field: str, expected: object, actual: object, hint: str
+    ) -> None:
+        findings.append(
+            Disagreement(rule, source, field, str(expected), str(actual), hint)
+        )
+
+    pyproject_path = repo_root / "pyproject.toml"
+    try:
+        import tomllib
+
+        project = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))["project"]
+    except (OSError, KeyError, ValueError) as exc:
+        add(
+            "C5",
+            "pyproject.toml",
+            "project metadata",
+            "readable project table",
+            exc,
+            "Fix pyproject.toml metadata",
+        )
+        project = {}
+
+    airflow_req: Requirement | None = None
+    try:
+        airflow_req = next(
+            req
+            for req in (Requirement(value) for value in project.get("dependencies", []))
+            if req.name.lower().replace("_", "-") == "apache-airflow"
+        )
+    except (StopIteration, ValueError) as exc:
+        add(
+            "C5",
+            "pyproject.toml",
+            "apache-airflow requirement",
+            "one valid direct requirement",
+            exc,
+            "Declare apache-airflow in project.dependencies",
+        )
+
+    if airflow_req is not None:
+        specifiers = list(airflow_req.specifier)
+        lower = next((s.version for s in specifiers if s.operator == ">="), None)
+        expected_floor = matrix.airflow[0].line
+        actual_floor = ".".join(lower.split(".")[:2]) if lower else "missing >= bound"
+        if actual_floor != expected_floor:
+            add(
+                "C1",
+                "pyproject.toml",
+                "apache-airflow floor",
+                expected_floor,
+                actual_floor,
+                "Align the >= floor with the first Airflow line",
+            )
+        excluded = [s for s in specifiers if s.operator == "!="]
+        if excluded:
+            add(
+                "C2",
+                "pyproject.toml",
+                "apache-airflow exclusions",
+                "no != clauses",
+                ", ".join(map(str, excluded)),
+                "Remove the exclusion or record and encode the allowed defect exception",
+            )
+        outside = [
+            line.release
+            for line in matrix.airflow
+            if Version(line.release) not in airflow_req.specifier
+        ]
+        if outside:
+            add(
+                "C2",
+                "pyproject.toml",
+                "apache-airflow tested releases",
+                ", ".join(matrix_line.release for matrix_line in matrix.airflow),
+                f"outside: {', '.join(outside)} ({airflow_req.specifier})",
+                "Make the declared requirement admit every tested release",
+            )
+
+    python_spec = project.get("requires-python")
+    if isinstance(python_spec, str):
+        try:
+            parsed = SpecifierSet(python_spec)
+        except InvalidSpecifier as exc:
+            add(
+                "C5",
+                "pyproject.toml",
+                "requires-python",
+                "valid PEP 440 specifier",
+                str(exc),
+                "Correct project.requires-python in pyproject.toml",
+            )
+            parsed = None
+        if parsed is not None:
+            lower_python = next(
+                (s.version for s in parsed if s.operator in (">", ">=")), None
+            )
+            expected_python = matrix.python_supported[0]
+            actual_python = (
+                ".".join(lower_python.split(".")[:2])
+                if lower_python
+                else "missing lower bound"
+            )
+            if actual_python != expected_python:
+                add(
+                    "C3",
+                    "pyproject.toml",
+                    "requires-python floor",
+                    expected_python,
+                    actual_python,
+                    "Align requires-python with the lowest supported Python",
+                )
+            upper = [s for s in parsed if s.operator in ("<", "<=", "~=")]
+            if upper:
+                add(
+                    "C3",
+                    "pyproject.toml",
+                    "requires-python upper bound",
+                    "no <, <= or ~= bounds",
+                    ", ".join(map(str, upper)),
+                    "Remove the requires-python upper bound",
+                )
+    else:
+        add(
+            "C5",
+            "pyproject.toml",
+            "requires-python",
+            "valid string specifier",
+            python_spec,
+            "Set project.requires-python",
+        )
+
+    expected_classifiers = {
+        f"Programming Language :: Python :: {v}" for v in matrix.python_supported
+    }
+    actual_classifiers = {
+        v
+        for v in project.get("classifiers", [])
+        if re.fullmatch(r"Programming Language :: Python :: 3\.\d+", v)
+    }
+    if actual_classifiers != expected_classifiers:
+        add(
+            "C4",
+            "pyproject.toml",
+            "Python classifiers",
+            ", ".join(sorted(expected_classifiers)),
+            ", ".join(sorted(actual_classifiers)),
+            "Align Python classifiers with python.supported",
+        )
+
+    expected_table = render_table(matrix)
+    fragment = repo_root / ".github/support-matrix.md"
+    try:
+        actual_fragment = fragment.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        actual_fragment = "<missing file>"
+    except OSError as exc:
+        actual_fragment = f"<unreadable: {exc}>"
+    if actual_fragment != expected_table:
+        add(
+            "C6",
+            ".github/support-matrix.md",
+            "rendered table",
+            expected_table,
+            actual_fragment,
+            "Regenerate with `python .github/scripts/support_matrix.py render --write`",
+        )
+
+    try:
+        tracked = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files", "--cached", "-z", "--", "*.md"],
+            capture_output=True,
+            check=True,
+        ).stdout.split(b"\0")
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = (
+            exc.stderr.decode(errors="replace")
+            if isinstance(exc, subprocess.CalledProcessError)
+            and isinstance(exc.stderr, bytes)
+            else (exc.stderr or str(exc))
+            if isinstance(exc, subprocess.CalledProcessError)
+            else str(exc)
+        )
+        add(
+            "C6",
+            "git ls-files",
+            "tracked Markdown enumeration",
+            "tracked Markdown files enumerated",
+            detail,
+            "Run the consistency check from a readable Git worktree",
+        )
+        tracked = []
+    begin, end = "<!-- support-matrix:begin -->", "<!-- support-matrix:end -->"
+    for raw_path in tracked:
+        if not raw_path:
+            continue
+        rel = raw_path.decode("utf-8", errors="replace")
+        path = repo_root / rel
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            add(
+                "C6",
+                rel,
+                "marked support-matrix block",
+                "readable tracked Markdown file",
+                f"<unreadable: {exc.strerror or exc}>",
+                "Restore read access to this tracked Markdown file and rerun the check",
+            )
+            continue
+        cursor = 0
+        while (start := content.find(begin, cursor)) >= 0:
+            body_start = start + len(begin)
+            stop = content.find(end, body_start)
+            if stop < 0:
+                actual = "<missing end marker>"
+                cursor = len(content)
+            else:
+                actual = content[body_start:stop].lstrip("\r\n")
+                cursor = stop + len(end)
+            if actual != expected_table:
+                add(
+                    "C6",
+                    rel,
+                    "marked support-matrix block",
+                    expected_table,
+                    actual,
+                    "Regenerate with `python .github/scripts/support_matrix.py render --write` and update this marked copy",
+                )
+
+    compose_path = repo_root / "docker/spark/docker-compose.yml"
+    try:
+        compose = compose_path.read_text(encoding="utf-8")
+    except OSError:
+        compose = ""
+    match = re.search(r"\$\{SPARK_IMAGE:-([^}]+)\}", compose)
+    expected_image = matrix.services["spark"].image
+    actual_image = match.group(1) if match else "<missing ${SPARK_IMAGE:-...} default>"
+    if actual_image != expected_image:
+        add(
+            "C7",
+            "docker/spark/docker-compose.yml",
+            "SPARK_IMAGE default",
+            expected_image,
+            actual_image,
+            "Set the compose default to services.spark.image",
+        )
+    return findings
+
+
 def _lane_dict(lane: Lane) -> dict[str, object]:
     return {
         "id": lane.id,
@@ -424,7 +693,7 @@ def main(argv: list[str] | None = None) -> int:
         Path(__file__).resolve().parents[2] / ".github" / "support-matrix.toml"
     )
     parser = argparse.ArgumentParser(description="Validate or emit support matrix data")
-    parser.add_argument("command", nargs="?", choices=("emit", "render"))
+    parser.add_argument("command", nargs="?", choices=("emit", "render", "check"))
     parser.add_argument(
         "--matrix", type=Path, default=default_path, help="matrix TOML file"
     )
@@ -466,6 +735,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
         return 0
+    if args.command == "check":
+        disagreements = check_consistency(matrix, Path(__file__).resolve().parents[2])
+        for item in disagreements:
+            print(
+                f"{item.rule} {item.source}: {item.field}: expected {item.expected}; "
+                f"actual {item.actual}. Hint: {item.hint}"
+            )
+        return 1 if disagreements else 0
     if args.command == "emit":
         if args.write or args.check:
             parser.error("render options require the render command")

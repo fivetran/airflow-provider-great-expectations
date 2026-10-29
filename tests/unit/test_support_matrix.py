@@ -391,6 +391,246 @@ def test_render_table_is_stable(support_matrix_module):
     ) == support_matrix_module.render_table(matrix)
 
 
+def _consistency_repo(tmp_path: Path, pyproject: str, compose: str = "") -> Path:
+    root = tmp_path / "repo"
+    (root / ".github").mkdir(parents=True)
+    (root / "docker/spark").mkdir(parents=True)
+    (root / "pyproject.toml").write_text(pyproject)
+    (root / "docker/spark/docker-compose.yml").write_text(compose)
+    return root
+
+
+def test_consistency_reports_current_metadata_disagreements(
+    support_matrix_module,
+):
+    matrix = support_matrix_module.load(MATRIX_PATH)
+    root = SCRIPT_PATH.parents[2]
+
+    findings = support_matrix_module.check_consistency(matrix, root)
+
+    assert {(item.rule, item.field) for item in findings} == {
+        ("C1", "apache-airflow floor"),
+        ("C3", "requires-python floor"),
+        ("C3", "requires-python upper bound"),
+        ("C4", "Python classifiers"),
+        ("C7", "SPARK_IMAGE default"),
+    }
+    assert not any(item.rule == "C2" for item in findings)
+    assert all(item.source for item in findings)
+
+
+def test_consistency_accepts_2_0_shaped_metadata(
+    support_matrix_module, current_matrix_text, tmp_path
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(current_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    classifiers = "\n".join(
+        f'    "Programming Language :: Python :: {version}",'
+        for version in ("3.11", "3.12", "3.13", "3.14")
+    )
+    pyproject = f"""[project]\nrequires-python = ">=3.11"\nclassifiers = [\n{classifiers}\n]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n"""
+    fragment = support_matrix_module.render_table(matrix)
+    root = _consistency_repo(
+        tmp_path,
+        pyproject,
+        f"services:\n  spark:\n    image: ${{SPARK_IMAGE:-apache/spark:4.1.3-java17@sha256:{'b' * 64}}}\n",
+    )
+    (root / ".github/support-matrix.md").write_text(fragment)
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "add", ".github/support-matrix.md"], check=True
+    )
+
+    assert support_matrix_module.check_consistency(matrix, root) == []
+
+
+@pytest.mark.parametrize(
+    ("specifier", "expected_field"),
+    [
+        (">=2.11.0,!=3.1.0", "apache-airflow exclusions"),
+        (">=2.11.0,<3.3", "apache-airflow tested releases"),
+    ],
+)
+def test_consistency_detects_airflow_exclusion_and_release_outside_range(
+    support_matrix_module, current_matrix_text, tmp_path, specifier, expected_field
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(current_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        f'[project]\ndependencies = ["apache-airflow{specifier}"]\n',
+        "services:\n  spark:\n    image: ${SPARK_IMAGE:-x}\n",
+    )
+
+    findings = support_matrix_module.check_consistency(matrix, root)
+
+    assert any(item.rule == "C2" and item.field == expected_field for item in findings)
+
+
+def test_consistency_checks_all_marked_copies_and_compose_default(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        '[project]\nrequires-python = ">=3.11"\nclassifiers = ["Programming Language :: Python :: 3.11"]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n',
+        "services:\n  spark:\n    image: apache/spark:wrong\n",
+    )
+    tracked = subprocess.run(
+        ["git", "init", "-q", str(root)], check=False, capture_output=True
+    )
+    assert tracked.returncode == 0
+    expected = support_matrix_module.render_table(matrix)
+    (root / ".github/support-matrix.md").write_text(expected)
+    copy = root / "README.md"
+    copy.write_text(
+        f"intro\n<!-- support-matrix:begin -->\n{expected}<!-- support-matrix:end -->\n"
+    )
+    subprocess.run(
+        ["git", "-C", str(root), "add", "README.md", ".github/support-matrix.md"],
+        check=True,
+    )
+    copy.write_text(copy.read_text().replace("| 3.1 |", "| stale |"))
+
+    findings = support_matrix_module.check_consistency(matrix, root)
+
+    stale = [item for item in findings if item.rule == "C6"]
+    assert len(stale) == 1 and stale[0].source == "README.md"
+    assert "support_matrix.py render --write" in stale[0].hint
+    assert stale[0].expected == expected
+    assert stale[0].actual != expected and "| stale |" in stale[0].actual
+    compose = [item for item in findings if item.rule == "C7"]
+    assert len(compose) == 1
+
+
+def test_consistency_reports_stale_fragment_values_and_regeneration_hint(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        '[project]\nrequires-python = ">=3.11"\nclassifiers = ["Programming Language :: Python :: 3.11"]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n',
+    )
+    expected = support_matrix_module.render_table(matrix)
+    actual = expected.replace("| 3.1 |", "| stale |")
+    (root / ".github/support-matrix.md").write_text(actual)
+
+    finding = next(
+        item
+        for item in support_matrix_module.check_consistency(matrix, root)
+        if item.source == ".github/support-matrix.md"
+    )
+
+    assert finding.rule == "C6"
+    assert finding.expected == expected
+    assert finding.actual == actual
+    assert "support_matrix.py render --write" in finding.hint
+
+
+def test_consistency_reports_markdown_enumeration_and_read_errors(
+    support_matrix_module, valid_matrix_text, tmp_path, monkeypatch
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        '[project]\nrequires-python = ">=3.11"\nclassifiers = ["Programming Language :: Python :: 3.11"]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n',
+    )
+    expected = support_matrix_module.render_table(matrix)
+    (root / ".github/support-matrix.md").write_text(expected)
+    readme = root / "README.md"
+    readme.write_text(
+        f"<!-- support-matrix:begin -->\n{expected}<!-- support-matrix:end -->"
+    )
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "add", "README.md", ".github/support-matrix.md"],
+        check=True,
+    )
+    original_run = support_matrix_module.subprocess.run
+
+    def fail_ls_files(command, *args, **kwargs):
+        if "ls-files" in command:
+            raise FileNotFoundError("git unavailable")
+        return original_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(support_matrix_module.subprocess, "run", fail_ls_files)
+    enumeration = support_matrix_module.check_consistency(matrix, root)
+    failure = next(item for item in enumeration if item.source == "git ls-files")
+    assert failure.rule == "C6" and "git unavailable" in failure.actual
+    assert failure.expected == "tracked Markdown files enumerated"
+
+    monkeypatch.setattr(support_matrix_module.subprocess, "run", original_run)
+    readme.unlink()
+    unreadable = support_matrix_module.check_consistency(matrix, root)
+    read_failure = next(item for item in unreadable if item.source == "README.md")
+    assert read_failure.rule == "C6" and read_failure.actual.startswith("<unreadable:")
+
+
+def test_consistency_reports_present_but_wrong_compose_default(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        '[project]\nrequires-python = ">=3.11"\nclassifiers = ["Programming Language :: Python :: 3.11"]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n',
+        "services:\n  spark:\n    image: ${SPARK_IMAGE:-apache/spark:wrong}\n",
+    )
+
+    finding = next(
+        item
+        for item in support_matrix_module.check_consistency(matrix, root)
+        if item.rule == "C7"
+    )
+
+    assert finding.expected == matrix.services["spark"].image
+    assert finding.actual == "apache/spark:wrong"
+
+
+def test_consistency_reports_invalid_requires_python(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(matrix_path)
+    root = _consistency_repo(
+        tmp_path,
+        '[project]\nrequires-python = ">=not-a-version"\nclassifiers = ["Programming Language :: Python :: 3.11"]\ndependencies = ["apache-airflow>=2.11.0,<4"]\n',
+    )
+
+    findings = support_matrix_module.check_consistency(matrix, root)
+
+    assert any(
+        item.source == "pyproject.toml"
+        and item.field == "requires-python"
+        and item.rule == "C5"
+        for item in findings
+    )
+
+
+def test_check_command_prints_each_disagreement_and_returns_one():
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "check"],
+        cwd=SCRIPT_PATH.parents[2],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "C1" in result.stdout and "C3" in result.stdout and "C4" in result.stdout
+    assert "C7" in result.stdout
+
+
 def test_render_write_and_check_cli_and_stale_detection(tmp_path):
     scratch_github = tmp_path / ".github"
     scratch_scripts = scratch_github / "scripts"
