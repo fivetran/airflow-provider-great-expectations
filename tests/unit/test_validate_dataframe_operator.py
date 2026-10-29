@@ -206,11 +206,10 @@ class TestValidateDataFrameOperator:
         # check the result of the first (only) expectation
         assert pushed_result["expectations"][0]["result"] == expected_result
 
-    def test_context_type_ephemeral(self, mock_gx_with_pandas_datasource: Mock):
-        """Expect that param context_type creates an EphemeralDataContext."""
-        # arrange
-        context_type: Literal["ephemeral"] = "ephemeral"
+    def test_uses_ephemeral_context(self, mock_gx_with_pandas_datasource: Mock):
+        """Expect that the operator uses an ephemeral context."""
 
+        # arrange
         def configure_expectations(context: AbstractDataContext) -> Mock:
             return Mock()
 
@@ -218,7 +217,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
             configure_expectations=configure_expectations,
-            context_type=context_type,
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -228,33 +226,7 @@ class TestValidateDataFrameOperator:
 
         # assert
         mock_gx_with_pandas_datasource.get_context.assert_called_once_with(
-            mode=context_type,
-            user_agent_str=USER_AGENT_STR,
-        )
-
-    def test_context_type_cloud(self, mock_gx_with_pandas_datasource: Mock):
-        """Expect that param context_type creates a CloudDataContext."""
-        # arrange
-        context_type: Literal["cloud"] = "cloud"
-
-        def configure_expectations(context: AbstractDataContext) -> Mock:
-            return Mock()
-
-        validate_df = GXValidateDataFrameOperator(
-            task_id="validate_df_success",
-            configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
-            configure_expectations=configure_expectations,
-            context_type=context_type,
-        )
-        mock_ti = Mock()
-        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
-
-        # act
-        validate_df.execute(context=context)
-
-        # assert
-        mock_gx_with_pandas_datasource.get_context.assert_called_once_with(
-            mode=context_type,
+            mode="ephemeral",
             user_agent_str=USER_AGENT_STR,
         )
 
@@ -268,7 +240,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -286,7 +257,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -304,7 +274,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -322,7 +291,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=Mock(spec=pd.DataFrame)),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -340,7 +308,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=MockSparkDataFrame()),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
@@ -358,7 +325,6 @@ class TestValidateDataFrameOperator:
             task_id="validate_df_success",
             configure_dataframe=Mock(return_value=MockSparkDataFrame()),
             configure_expectations=configure_expectations,
-            context_type="cloud",
         )
         mock_ti = Mock()
         context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]

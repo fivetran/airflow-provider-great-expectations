@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Callable, Literal, Union
+from typing import TYPE_CHECKING, Callable, Literal
 
 from airflow.models import BaseOperator
 from great_expectations.datasource.fluent import PandasDatasource, SparkDatasource
@@ -14,7 +14,6 @@ from great_expectations_provider.common.gx_context_actions import (
 from great_expectations_provider.exceptions.exceptions import (
     ExistingDataSourceTypeMismatch,
 )
-from great_expectations_provider.hooks.gx_cloud import GXCloudHook
 
 if TYPE_CHECKING:
     import pyspark.sql as pyspark
@@ -32,7 +31,7 @@ class GXValidateDataFrameOperator(BaseOperator):
     An operator to use Great Expectations to validate Expectations against a DataFrame in your Airflow DAG.
 
     Args:
-        task_id: Airflow task ID. Alphanumeric name used in the Airflow UI and to name components in GX Cloud.
+        task_id: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.
         configure_dataframe: A callable which returns the DataFrame to be validated.
         configure_expectations: A callable that takes an AbstractDataContext and returns an Expectation or
             ExpectationSuite to validate against the DataFrame. Available Expectations can be found at
@@ -41,10 +40,6 @@ class GXValidateDataFrameOperator(BaseOperator):
             "BOOLEAN_ONLY", "BASIC", "SUMMARY", "COMPLETE". Defaults to "SUMMARY". See
             https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/choose_a_result_format
             for more information.
-        context_type: accepts `ephemeral` or `cloud` to set the DataContext used by the Operator.
-            Defaults to `ephemeral`, which does not persist results between runs.
-            To save and view Validation Results in GX Cloud, use `cloud` and include
-            GX Cloud credentials in your environment.
     """
 
     def __init__(
@@ -56,11 +51,9 @@ class GXValidateDataFrameOperator(BaseOperator):
             [AbstractDataContext], Expectation | ExpectationSuite
         ]
         | None = None,
-        context_type: Literal["ephemeral", "cloud"] = "ephemeral",
         result_format: (
             Literal["BOOLEAN_ONLY", "BASIC", "SUMMARY", "COMPLETE"] | None
         ) = None,
-        conn_id: Union[str, None] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -81,22 +74,14 @@ class GXValidateDataFrameOperator(BaseOperator):
         if configure_expectations is None and self._deprecated_expect is None:
             raise ValueError("configure_expectations is required")
 
-        self.context_type = context_type
         self.dataframe = configure_dataframe()
         self.configure_expectations = configure_expectations
         self.result_format = result_format
-        self.conn_id = conn_id
 
     def execute(self, context: Context) -> None:
         from pandas import DataFrame
 
-        if self.conn_id:
-            gx_cloud_config = GXCloudHook(gx_cloud_conn_id=self.conn_id).get_conn()
-        else:
-            gx_cloud_config = None
-        gx_context = load_data_context(
-            gx_cloud_config=gx_cloud_config, context_type=self.context_type
-        )
+        gx_context = load_data_context()
 
         if isinstance(self.dataframe, DataFrame):
             batch_definition = self._get_pandas_batch_definition(gx_context)

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Callable, Generator, Literal, Union, cast
+from typing import TYPE_CHECKING, Callable, Generator, Literal, cast
 
 from airflow.models import BaseOperator
 
 from great_expectations_provider.common.constants import USER_AGENT_STR
 from great_expectations_provider.common.errors import GXValidationFailed
 from great_expectations_provider.common.gx_context_actions import load_data_context
-from great_expectations_provider.hooks.gx_cloud import GXCloudHook
 
 if TYPE_CHECKING:
     from airflow.utils.context import Context
@@ -31,10 +30,9 @@ class GXValidateCheckpointOperator(BaseOperator):
             Defaults to the first valid Batch found, which is the most recent Batch (with default sort ascending)
             or the oldest Batch if the Batch Definition has been configured to sort descending.
             For more information see https://docs.greatexpectations.io/docs/core/define_expectations/retrieve_a_batch_of_test_data.
-        context_type: accepts `ephemeral`, `cloud`, or `file` to set the DataContext used by the Operator.
+        context_type: accepts `ephemeral` or `file` to set the DataContext used by the Operator.
             Defaults to `ephemeral`, which does not persist results between runs.
-            To save and view Validation Results in GX Cloud, use `cloud` and include
-            GX Cloud credentials in your environment. To manage Validation Results yourself, use `file` and provide the
+            To manage Validation Results yourself, use `file` and provide the
             `configure_file_data_context` parameter.
         configure_file_data_context: callable that returns or yields a `FileDataContext`. Applicable only when using
             a FileDataContext. By default, GX will write results in the configuration directory. If you are retrieving
@@ -47,17 +45,21 @@ class GXValidateCheckpointOperator(BaseOperator):
         self,
         configure_checkpoint: Callable[[AbstractDataContext], Checkpoint],
         batch_parameters: BatchParameters | None = None,
-        context_type: Literal["ephemeral", "cloud", "file"] = "ephemeral",
+        context_type: Literal["ephemeral", "file"] = "ephemeral",
         configure_file_data_context: (
             Callable[[], FileDataContext]
             | Callable[[], Generator[FileDataContext, None, None]]
             | None
         ) = None,
-        conn_id: Union[str, None] = None,
         *args,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
+
+        if context_type not in ("ephemeral", "file"):
+            raise ValueError(
+                f"Parameter `context_type` must be 'ephemeral' or 'file', got '{context_type}'"
+            )
 
         if batch_parameters is None:
             self.batch_parameters = {}
@@ -70,7 +72,6 @@ class GXValidateCheckpointOperator(BaseOperator):
         self.context_type = context_type
         self.configure_file_data_context = configure_file_data_context
         self.configure_checkpoint = configure_checkpoint
-        self.conn_id = conn_id
 
     def execute(self, context: Context) -> None:
         from great_expectations.data_context import AbstractDataContext, FileDataContext
@@ -93,13 +94,7 @@ class GXValidateCheckpointOperator(BaseOperator):
                 gx_context = file_context_fn()
             gx_context.set_user_agent_str(USER_AGENT_STR)
         else:
-            if self.conn_id:
-                gx_cloud_config = GXCloudHook(gx_cloud_conn_id=self.conn_id).get_conn()
-            else:
-                gx_cloud_config = None
-            gx_context = load_data_context(
-                gx_cloud_config=gx_cloud_config, context_type=self.context_type
-            )
+            gx_context = load_data_context()
         checkpoint = self.configure_checkpoint(gx_context)
 
         runtime_batch_params = context.get("params", {}).get("gx_batch_parameters")  # type: ignore[call-overload]
