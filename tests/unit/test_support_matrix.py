@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -86,6 +87,19 @@ lanes = ["newest"]
 [extras]
 athena = ["pyathena"]
 """
+
+
+@pytest.fixture
+def current_matrix_text(valid_matrix_text: str) -> str:
+    """A fixture copy of today's lane and tier policy for workflow output tests."""
+    text = valid_matrix_text.replace(
+        'supported = ["3.11", "3.12"]',
+        'supported = ["3.11", "3.12", "3.13", "3.14"]',
+    ).replace('next = "3.13"', 'next = "3.15"')
+    return text.replace(
+        '[tiers."2.11"]',
+        '[[airflow]]\nline = "3.2"\nrelease = "3.2.2"\ntier = "3.1+"\npython = ["3.11", "3.12", "3.13", "3.14"]\n\n[[airflow]]\nline = "3.3"\nrelease = "3.3.2"\ntier = "3.1+"\npython = ["3.11", "3.12", "3.13", "3.14"]\n\n[tiers."2.11"]',
+    )
 
 
 @pytest.mark.parametrize(
@@ -198,3 +212,154 @@ def test_cli_rejects_non_integer_schema_version(valid_matrix_text, tmp_path):
 
     assert result.returncode == 2
     assert "schema_version" in result.stderr
+
+
+def test_emit_rejects_unknown_constraints_template_field(valid_matrix_text, tmp_path):
+    matrix_path = tmp_path / "invalid-template.toml"
+    matrix_path.write_text(
+        valid_matrix_text.replace(
+            "constraints-{airflow}/constraints-{python}.txt",
+            "constraints-{airflow}-{unknown}/constraints-{python}.txt",
+        )
+    )
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "emit", "--matrix", str(matrix_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "install.constraints_url" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_lane_derivation_tracks_matrix_fixture(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    path = tmp_path / "matrix.toml"
+    path.write_text(valid_matrix_text)
+    matrix = support_matrix_module.load(path)
+
+    lanes = support_matrix_module.derive_lanes(matrix)
+    assert [(lane.airflow, lane.python, lane.roles) for lane in lanes] == [
+        ("2.11.2", "3.11", ("floor", "line")),
+        ("3.0.6", "3.11", ("line",)),
+        ("3.1.8", "3.11", ("newest", "line")),
+        ("3.1.8", "3.12", ("python-range",)),
+    ]
+    assert support_matrix_module.floor_lane(matrix) == lanes[0]
+    assert support_matrix_module.newest_lane(matrix) == lanes[2]
+
+    changed = valid_matrix_text.replace(
+        'supported = ["3.11", "3.12"]', 'supported = ["3.11", "3.12", "3.13"]'
+    )
+    changed = changed.replace('next = "3.13"', 'next = "3.14"')
+    changed = changed.replace(
+        'python = ["3.11", "3.12"]', 'python = ["3.11", "3.12", "3.13"]'
+    )
+    path.write_text(changed)
+    assert (
+        len(support_matrix_module.derive_lanes(support_matrix_module.load(path))) == 5
+    )
+
+
+def test_typecheck_targets_repeat_mypy_flag_per_name(
+    support_matrix_module, valid_matrix_text, tmp_path
+):
+    path = tmp_path / "matrix.toml"
+    path.write_text(valid_matrix_text)
+    targets = support_matrix_module.typecheck_targets(support_matrix_module.load(path))
+
+    assert [
+        (target.tier, target.lane.airflow, target.lane.python) for target in targets
+    ] == [
+        ("2.11", "2.11.2", "3.11"),
+        ("3.0", "3.0.6", "3.11"),
+        ("3.1+", "3.1.8", "3.11"),
+    ]
+    assert targets[0].mypy_args == (
+        "--always-false=AIRFLOW_V_3_0_PLUS",
+        "--always-false=AIRFLOW_V_3_1_PLUS",
+    )
+    assert targets[1].mypy_args == (
+        "--always-true=AIRFLOW_V_3_0_PLUS",
+        "--always-false=AIRFLOW_V_3_1_PLUS",
+    )
+
+
+def test_emit_writes_all_matrix_outputs(
+    support_matrix_module, current_matrix_text, tmp_path
+):
+    output = tmp_path / "github-output"
+    matrix_path = tmp_path / "matrix.toml"
+    matrix_path.write_text(current_matrix_text)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "emit",
+            "--matrix",
+            str(matrix_path),
+            "--output",
+            str(output),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    values = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    assert set(values) == {
+        "lanes",
+        "typecheck",
+        "postgres",
+        "spark",
+        "postgres-image",
+        "spark-image",
+        "pyspark-version",
+        "canary-latest",
+        "canary-lowest-direct",
+        "lowest-python",
+        "next-python",
+        "uv-version",
+    }
+    lanes = json.loads(values["lanes"])
+    assert len(lanes) == 8
+    assert lanes[0]["roles"] == ["floor", "line"]
+    assert json.loads(values["typecheck"])[0]["mypy_args"] == [
+        "--always-false=AIRFLOW_V_3_0_PLUS",
+        "--always-false=AIRFLOW_V_3_1_PLUS",
+    ]
+    targets = json.loads(values["typecheck"])
+    assert [
+        (target["tier"], target["lane"]["airflow"], target["lane"]["python"])
+        for target in targets
+    ] == [
+        ("2.11", "2.11.2", "3.11"),
+        ("3.0", "3.0.6", "3.11"),
+        ("3.1+", "3.3.2", "3.11"),
+    ]
+    postgres_lanes = json.loads(values["postgres"])
+    assert [
+        (lane["airflow"], lane["python"], lane["roles"]) for lane in postgres_lanes
+    ] == [
+        ("2.11.2", "3.11", ["floor", "line"]),
+        ("3.3.2", "3.11", ["newest", "line"]),
+    ]
+    spark_lanes = json.loads(values["spark"])
+    assert [
+        (lane["airflow"], lane["python"], lane["roles"]) for lane in spark_lanes
+    ] == [
+        ("3.3.2", "3.11", ["newest", "line"]),
+    ]
+    assert json.loads(values["canary-latest"]) == {"python": "3.14"}
+    lowest_direct = json.loads(values["canary-lowest-direct"])
+    assert lowest_direct[0] == {
+        "airflow": "floor",
+        "python": "3.11",
+        "constraints_template": "https://example.test/constraints-{airflow}/constraints-{python}.txt",
+    }
+    assert lowest_direct[1]["airflow"] == "3.2.2"
+    assert lowest_direct[1]["python"] == "3.14"
