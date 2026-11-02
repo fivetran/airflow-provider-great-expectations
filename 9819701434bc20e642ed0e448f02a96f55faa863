@@ -1,0 +1,23 @@
+docker/spark/docker-compose.yml
+  7800039f8f1a3cfc 2-6,8-11,13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "9819701434bc20e642ed0e448f02a96f55faa863",
+  "prompts": {
+    "7800039f8f1a3cfc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "00ef8749-f1f3-4c53-b4d1-a574ffa8a350",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 35,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
