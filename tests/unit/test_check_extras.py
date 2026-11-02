@@ -50,6 +50,15 @@ def recorded(name: str) -> dict[str, Any]:
     return json.loads((FIXTURES / f"uv-compile-{name}.json").read_text("utf-8"))
 
 
+@pytest.fixture(autouse=True)
+def no_job_summary(monkeypatch):
+    """Keep the check's report out of the job summary of the CI job running these tests.
+
+    Tests that check the summary set GITHUB_STEP_SUMMARY to a temporary file themselves.
+    """
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+
+
 @pytest.fixture
 def check_extras():
     spec = importlib.util.spec_from_file_location("check_extras_under_test", SCRIPT)
