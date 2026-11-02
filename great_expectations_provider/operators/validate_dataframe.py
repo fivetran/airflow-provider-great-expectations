@@ -32,8 +32,7 @@ class GXValidateDataFrameOperator(BaseOperator):
 
     Args:
         task_id: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.
-        configure_dataframe: A callable which returns the DataFrame to be validated. The Operator calls it when
-            the task runs, not when Airflow parses the DAG file, so data is not loaded during DAG parsing.
+        configure_dataframe: A callable which returns the DataFrame to be validated, invoked when the task runs.
         configure_expectations: A callable that takes an AbstractDataContext and returns an Expectation or
             ExpectationSuite to validate against the DataFrame. Available Expectations can be found at
             https://greatexpectations.io/expectations.
