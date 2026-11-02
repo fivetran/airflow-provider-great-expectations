@@ -20,6 +20,8 @@ from great_expectations_provider.common.external_connections import (
     build_trino_connection_string,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestRedshiftConnectionString:
     """Test class for Redshift connection string."""
