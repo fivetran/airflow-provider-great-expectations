@@ -1,0 +1,14 @@
+{
+  "recorded": "2026-11-02",
+  "uv": "0.11.24",
+  "lane": {
+    "airflow": "2.11.2",
+    "python": "3.11"
+  },
+  "extra": "postgresql",
+  "command": "uv pip compile <requirements> --constraint <filtered constraints> --python-version 3.11 --python-platform x86_64-manylinux_2_28 --no-header --no-annotate",
+  "returncode": 0,
+  "stdout": "airflow-provider-great-expectations @ file:///path/to/provider\napache-airflow==2.11.2\ngreat-expectations==1.24.1\ngrpcio==1.65.5\npsycopg2-binary==2.9.11\nstructlog==25.4.0\n",
+  "stderr": "Resolved 157 packages in 16ms\n",
+  "note": "stdout is trimmed to the provider, Airflow, GX, structlog and the driver lines the check reads; every other pin was dropped"
+}
