@@ -32,7 +32,9 @@ class GXValidateDataFrameOperator(BaseOperator):
 
     Args:
         task_id: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.
-        configure_dataframe: A callable which returns the DataFrame to be validated.
+        configure_dataframe: A callable which returns the DataFrame to be validated. It is called each time the
+            task runs, not when the DAG file is parsed, so it can read from a source that is only reachable from
+            workers.
         configure_expectations: A callable that takes an AbstractDataContext and returns an Expectation or
             ExpectationSuite to validate against the DataFrame. Available Expectations can be found at
             https://greatexpectations.io/expectations.
@@ -74,24 +76,23 @@ class GXValidateDataFrameOperator(BaseOperator):
         if configure_expectations is None and self._deprecated_expect is None:
             raise ValueError("configure_expectations is required")
 
-        self.dataframe = configure_dataframe()
+        self.configure_dataframe = configure_dataframe
         self.configure_expectations = configure_expectations
         self.result_format = result_format
 
     def execute(self, context: Context) -> None:
         from pandas import DataFrame
 
+        dataframe = self.configure_dataframe()
         gx_context = load_data_context()
 
-        if isinstance(self.dataframe, DataFrame):
+        if isinstance(dataframe, DataFrame):
             batch_definition = self._get_pandas_batch_definition(gx_context)
-        elif type(self.dataframe).__name__ == "DataFrame":
+        elif type(dataframe).__name__ == "DataFrame":
             # if it's not pandas, but the classname is Dataframe, we assume spark
             batch_definition = self._get_spark_batch_definition(gx_context)
         else:
-            raise ValueError(
-                f"Unsupported dataframe type: {type(self.dataframe).__name__}"
-            )
+            raise ValueError(f"Unsupported dataframe type: {type(dataframe).__name__}")
 
         if self.configure_expectations is not None:
             expect = self.configure_expectations(gx_context)
@@ -101,7 +102,7 @@ class GXValidateDataFrameOperator(BaseOperator):
             raise ValueError("configure_expectations is required")
 
         batch_parameters = {
-            "dataframe": self.dataframe,
+            "dataframe": dataframe,
         }
         result = run_validation_definition(
             task_id=self.task_id,

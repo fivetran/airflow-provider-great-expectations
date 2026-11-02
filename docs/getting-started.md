@@ -109,7 +109,7 @@ After deciding [which Operator best fits your use case](#operator-use-cases), fo
     ```
 
     - **`task_id`**: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.
-    - **`configure_dataframe`**: function that returns a DataFrame to pass data to the Operator.
+    - **`configure_dataframe`**: function that returns a DataFrame to pass data to the Operator. The Operator calls it each time the task runs, not when Airflow parses the DAG file.
     - **`configure_expectations`**: function that returns either a [single Expectation](https://docs.greatexpectations.io/docs/core/define_expectations/create_an_expectation) or an [Expectation Suite](https://docs.greatexpectations.io/docs/core/define_expectations/organize_expectation_suites) to validate against your data.
     - **`result_format` (optional)**: accepts `BOOLEAN_ONLY`, `BASIC`, `SUMMARY`, or `COMPLETE` to set the [verbosity of returned Validation Results](https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/choose_a_result_format/). Defaults to `SUMMARY`.
 
