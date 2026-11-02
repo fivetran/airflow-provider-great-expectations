@@ -1,55 +1,87 @@
-name: "Slack Notifications"
+name: Slack Notifications
+
+# Announces new issues, and pull requests opened by people without write access, in Slack.
+# Pull requests opened by bots (Dependabot and other apps) are skipped before the permission
+# lookup.
+#
+# `pull_request_target` runs in the context of the base repository, so this workflow never
+# checks out, builds or runs pull-request content: it reads only event metadata. Every event
+# field that comes from a contributor (titles, logins, URLs) reaches the Slack action and the
+# `gh` call through `env`, never interpolated into a script. Inside the payload the values are
+# rendered with `toJSON`, so a title can't add or change payload fields. The jobs hold no write
+# permission.
 
 on:
   issues:
     types: [opened]
-  pull_request_target: # zizmor: ignore[dangerous-triggers]
+  pull_request_target: # zizmor: ignore[dangerous-triggers] no checkout; only event metadata is read
     types: [opened]
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   notify-on-issue:
+    name: Notify on new issue
     if: github.event_name == 'issues'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     environment: notifications
     permissions: {}
     steps:
       - name: Notify Slack
-        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
-        with:
-          channel-id: C0AMYQ5944C
-          payload: |
-            {
-              "text": "New issue in <${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>: <${{ github.event.issue.html_url }}|${{ github.event.issue.title }}> opened by ${{ github.event.issue.user.login }}"
-            }
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          REPO: ${{ github.repository }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          errors: true # fail the run when Slack rejects the post, so a broken token or channel is visible
+          payload: |
+            channel: C0AMYQ5944C
+            text: ${{ toJSON(format('New issue in <{0}|{1}>: <{2}|{3}> opened by {4}', env.REPO_URL, env.REPO, env.ISSUE_URL, env.ISSUE_TITLE, env.ISSUE_AUTHOR)) }}
 
   notify-on-external-pr:
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
+    name: Notify on new external pull request
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.user.type != 'Bot' # bot-authored PRs (Dependabot, other apps) are not external contributions; bots report "none" and would otherwise be announced
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     environment: notifications
     permissions:
-      pull-requests: read
+      pull-requests: read # read-only token for the collaborator permission lookup; nothing here writes
     steps:
-      - name: Check User Permission
-        id: check-permission
-        uses: actions-cool/check-user-permission@7b90a27f92f3961b368376107661682c441f6103 # v2
-        with:
-          require: write
-          username: ${{ github.event.pull_request.user.login }}
+      - name: Look up the author's repository permission
+        id: author-permission
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          permission="$(gh api "repos/${REPO}/collaborators/${AUTHOR}/permission" --jq .permission)"
+          echo "permission=${permission}" >> "$GITHUB_OUTPUT"
 
       - name: Notify Slack
-        if: steps.check-permission.outputs.require-result == 'false'
-        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
-        with:
-          channel-id: C0AMYQ5944C
-          payload: |
-            {
-              "text": "New PR from external contributor in <${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>: <${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}> opened by ${{ github.event.pull_request.user.login }}"
-            }
+        if: steps.author-permission.outputs.permission == 'read' || steps.author-permission.outputs.permission == 'none'
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          REPO: ${{ github.repository }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          errors: true # fail the run when Slack rejects the post, so a broken token or channel is visible
+          payload: |
+            channel: C0AMYQ5944C
+            text: ${{ toJSON(format('New PR from external contributor in <{0}|{1}>: <{2}|{3}> opened by {4}', env.REPO_URL, env.REPO, env.PR_URL, env.PR_TITLE, env.PR_AUTHOR)) }}
