@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +13,20 @@ pytestmark = pytest.mark.unit
 
 MATRIX_PATH = Path(__file__).parents[2] / ".github" / "support-matrix.toml"
 SCRIPT_PATH = Path(__file__).parents[2] / ".github" / "scripts" / "support_matrix.py"
+# A frozen snapshot of the matrix. Tests of the scripts' behaviour read it, not the
+# checked-in matrix, so a routine matrix update does not change what they expect.
+FROZEN_MATRIX_PATH = Path(__file__).parent / "fixtures" / "ci" / "support-matrix.toml"
+RENDER_HEADER = (
+    "<!-- Generated from `.github/support-matrix.toml`; run "
+    "`python .github/scripts/support_matrix.py render --write`. -->\n"
+    "| Airflow | Tested release | Python tested in CI | "
+    "Python supported by this Airflow line |\n"
+    "| --- | --- | --- | --- |\n"
+)
+
+
+def _version(text: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in text.split("."))
 
 
 def _overlap_tier_flags(text: str) -> str:
@@ -28,6 +43,16 @@ def support_matrix_module():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def frozen_matrix(support_matrix_module):
+    return support_matrix_module.load(FROZEN_MATRIX_PATH)
+
+
+@pytest.fixture
+def checked_in_matrix(support_matrix_module):
+    return support_matrix_module.load(MATRIX_PATH)
 
 
 @pytest.fixture
@@ -154,8 +179,47 @@ def test_rejects_invalid_matrix_and_names_entry(
     assert entry in str(error.value)
 
 
-def test_loads_checked_in_matrix(support_matrix_module):
-    matrix = support_matrix_module.load(MATRIX_PATH)
+def test_loads_checked_in_matrix(checked_in_matrix):
+    """The checked-in matrix changes with every routine update, so assert its shape."""
+    matrix = checked_in_matrix
+
+    assert matrix.reference_provider
+    assert matrix.python_supported
+    assert list(matrix.python_supported) == sorted(
+        set(matrix.python_supported), key=_version
+    )
+    assert _version(matrix.python_next) > _version(matrix.python_supported[-1])
+    assert matrix.airflow
+    lines = [line.line for line in matrix.airflow]
+    assert lines == sorted(set(lines), key=_version)
+    for airflow in matrix.airflow:
+        assert re.fullmatch(r"\d+\.\d+\.\d+", airflow.release)
+        assert airflow.release.rsplit(".", 1)[0] == airflow.line
+    assert matrix.airflow[-1].python == matrix.python_supported
+    assert all(matrix.extras.values())
+
+
+def test_checked_in_matrix_derives_a_floor_a_newest_and_a_lane_per_python(
+    support_matrix_module, checked_in_matrix
+):
+    matrix = checked_in_matrix
+    lowest_python = matrix.python_supported[0]
+
+    lanes = support_matrix_module.derive_lanes(matrix)
+    floor = support_matrix_module.floor_lane(matrix)
+    newest = support_matrix_module.newest_lane(matrix)
+
+    assert len(lanes) == len(matrix.airflow) + len(matrix.python_supported) - 1
+    assert (floor.airflow, floor.python) == (matrix.airflow[0].release, lowest_python)
+    assert (newest.airflow, newest.python) == (
+        matrix.airflow[-1].release,
+        lowest_python,
+    )
+    assert {lane.python for lane in lanes} == set(matrix.python_supported)
+
+
+def test_loads_frozen_matrix_fixture(frozen_matrix):
+    matrix = frozen_matrix
 
     assert matrix.reference_provider == "apache-airflow-providers-common-sql"
     assert matrix.python_supported == ("3.11", "3.12", "3.13", "3.14")
@@ -167,6 +231,25 @@ def test_loads_checked_in_matrix(support_matrix_module):
         "3.2.2",
         "3.3.2",
     ]
+
+
+def test_frozen_matrix_derives_eight_lanes_with_floor_and_newest_roles(
+    support_matrix_module, frozen_matrix
+):
+    lanes = support_matrix_module.derive_lanes(frozen_matrix)
+
+    assert [(lane.airflow, lane.python, lane.roles) for lane in lanes] == [
+        ("2.11.2", "3.11", ("floor", "line")),
+        ("3.0.6", "3.11", ("line",)),
+        ("3.1.8", "3.11", ("line",)),
+        ("3.2.2", "3.11", ("line",)),
+        ("3.3.2", "3.11", ("newest", "line")),
+        ("3.3.2", "3.12", ("python-range",)),
+        ("3.3.2", "3.13", ("python-range",)),
+        ("3.3.2", "3.14", ("python-range",)),
+    ]
+    assert support_matrix_module.floor_lane(frozen_matrix) == lanes[0]
+    assert support_matrix_module.newest_lane(frozen_matrix) == lanes[4]
 
 
 def test_cli_validates_real_matrix(support_matrix_module):
@@ -365,26 +448,39 @@ def test_emit_writes_all_matrix_outputs(
     assert lowest_direct[1]["python"] == "3.14"
 
 
-def test_render_table_has_four_columns_and_newest_line_first(support_matrix_module):
-    matrix = support_matrix_module.load(MATRIX_PATH)
+def test_render_table_has_four_columns_and_newest_line_first(
+    support_matrix_module, frozen_matrix
+):
+    rendered = support_matrix_module.render_table(frozen_matrix)
 
-    rendered = support_matrix_module.render_table(matrix)
-
-    assert rendered.startswith(
-        "<!-- Generated from `.github/support-matrix.toml`; run "
-        "`python .github/scripts/support_matrix.py render --write`. -->\n"
-        "| Airflow | Tested release | Python tested in CI | "
-        "Python supported by this Airflow line |\n"
-        "| --- | --- | --- | --- |\n"
-    )
+    assert rendered.startswith(RENDER_HEADER)
     assert "| 3.3 | 3.3.2 | 3.11, 3.12, 3.13, 3.14 | 3.11–3.14 |" in rendered
     assert "| 3.0 | 3.0.6 | 3.11 | 3.11–3.12 |" in rendered
     assert rendered.index("| 3.3 |") < rendered.index("| 3.2 |")
     assert rendered.index("| 3.2 |") < rendered.index("| 3.1 |")
 
 
-def test_render_table_is_stable(support_matrix_module):
-    matrix = support_matrix_module.load(MATRIX_PATH)
+def test_checked_in_matrix_renders_one_four_column_row_per_line_newest_first(
+    support_matrix_module, checked_in_matrix
+):
+    rendered = support_matrix_module.render_table(checked_in_matrix)
+
+    assert rendered.startswith(RENDER_HEADER)
+    rows = [
+        [cell.strip() for cell in row.strip("|").split("|")]
+        for row in rendered.removeprefix(RENDER_HEADER).splitlines()
+    ]
+    assert all(len(row) == 4 for row in rows)
+    assert [(row[0], row[1]) for row in rows] == [
+        (line.line, line.release) for line in reversed(checked_in_matrix.airflow)
+    ]
+
+
+@pytest.mark.parametrize(
+    "path", [MATRIX_PATH, FROZEN_MATRIX_PATH], ids=["checked-in", "frozen"]
+)
+def test_render_table_is_stable(support_matrix_module, path):
+    matrix = support_matrix_module.load(path)
 
     assert support_matrix_module.render_table(
         matrix
@@ -638,7 +734,7 @@ def test_render_write_and_check_cli_and_stale_detection(tmp_path):
     scratch_script.write_bytes(SCRIPT_PATH.read_bytes())
     matrix_path = scratch_github / "support-matrix.toml"
     fragment_path = scratch_github / "support-matrix.md"
-    matrix_path.write_bytes(MATRIX_PATH.read_bytes())
+    matrix_path.write_bytes(FROZEN_MATRIX_PATH.read_bytes())
 
     write_result = subprocess.run(
         [

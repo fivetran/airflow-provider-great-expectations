@@ -13,6 +13,9 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).parents[2]
 SCRIPT = ROOT / ".github/scripts/pypi_upstream.py"
 FIXTURES = Path(__file__).parent / "fixtures/ci"
+# Tests read this frozen matrix, not the checked-in one, so a routine matrix update
+# does not change what they expect.
+FROZEN_MATRIX = FIXTURES / "support-matrix.toml"
 
 
 @pytest.fixture
@@ -37,6 +40,11 @@ def data(upstream):
     return projects
 
 
+@pytest.fixture
+def matrix(upstream):
+    return upstream._load_support_matrix(FROZEN_MATRIX)
+
+
 def airflow_scenario(project):
     return replace(
         project,
@@ -50,8 +58,9 @@ def airflow_scenario(project):
     )
 
 
-def test_reference_drift_reports_both_floors_and_reference_version(upstream, data):
-    matrix = upstream._matrix()
+def test_reference_drift_reports_both_floors_and_reference_version(
+    upstream, data, matrix
+):
     findings = upstream.reference_drift(
         matrix, ROOT / "pyproject.toml", data["reference"]
     )
@@ -65,7 +74,7 @@ def test_reference_drift_reports_both_floors_and_reference_version(upstream, dat
 
 
 def test_reference_identity_uses_info_version_not_newer_prerelease_or_yanked(
-    upstream, data, tmp_path
+    upstream, data, matrix, tmp_path
 ):
     raw = json.loads((FIXTURES / "reference.json").read_text())
     raw["releases"]["9.0.0b1"] = [{"requires_python": ">=3.15", "yanked": False}]
@@ -78,12 +87,12 @@ def test_reference_identity_uses_info_version_not_newer_prerelease_or_yanked(
     )
 
     assert reference.latest_version == Version("2.4.0")
-    assert upstream.reference_drift(upstream._matrix(), pyproject, reference) == []
+    assert upstream.reference_drift(matrix, pyproject, reference) == []
 
 
 @pytest.mark.parametrize("file_metadata", [None, "missing"])
 def test_reference_python_floor_uses_info_when_latest_file_floor_is_absent(
-    upstream, tmp_path, file_metadata
+    upstream, matrix, tmp_path, file_metadata
 ):
     raw = json.loads((FIXTURES / "reference.json").read_text())
     raw["releases"]["2.4.0"] = [
@@ -97,14 +106,14 @@ def test_reference_python_floor_uses_info_when_latest_file_floor_is_absent(
         '[project]\nrequires-python = ">=3.11"\ndependencies = ["apache-airflow>=2.11.0,<4"]\n'
     )
 
-    assert upstream.reference_drift(upstream._matrix(), pyproject, reference) == []
+    assert upstream.reference_drift(matrix, pyproject, reference) == []
 
 
 def test_matrix_freshness_flags_newer_finals_but_ignores_yanked_and_prerelease(
-    upstream, data
+    upstream, data, matrix
 ):
     findings = upstream.matrix_freshness(
-        upstream._matrix(), ROOT / "pyproject.toml", airflow_scenario(data["airflow"])
+        matrix, ROOT / "pyproject.toml", airflow_scenario(data["airflow"])
     )
     assert any("3.3.3" in item.message for item in findings)
     assert any("3.4.0" in item.message for item in findings)
@@ -112,10 +121,8 @@ def test_matrix_freshness_flags_newer_finals_but_ignores_yanked_and_prerelease(
     assert all("3.3.4" not in item.message for item in findings)
 
 
-def test_next_python_gate_requires_both_classifiers(upstream, data):
-    open_gate, reasons = upstream.next_python_gate(
-        upstream._matrix(), data["airflow"], data["gx"]
-    )
+def test_next_python_gate_requires_both_classifiers(upstream, data, matrix):
+    open_gate, reasons = upstream.next_python_gate(matrix, data["airflow"], data["gx"])
     assert not open_gate
     assert any("great-expectations" in item for item in reasons)
     classifier = "Programming Language :: Python :: 3.15"
@@ -126,11 +133,11 @@ def test_next_python_gate_requires_both_classifiers(upstream, data):
         data["airflow"],
         latest_classifiers=data["airflow"].latest_classifiers + (classifier,),
     )
-    assert upstream.next_python_gate(upstream._matrix(), airflow, gx) == (True, ())
+    assert upstream.next_python_gate(matrix, airflow, gx) == (True, ())
 
 
 def test_prerelease_target_selects_new_airflow_prerelease_and_stable_gx(
-    upstream, data, monkeypatch
+    upstream, data, matrix, monkeypatch
 ):
     class Response:
         def __enter__(self):
@@ -142,9 +149,7 @@ def test_prerelease_target_selects_new_airflow_prerelease_and_stable_gx(
     monkeypatch.setattr(
         upstream.urllib.request, "urlopen", lambda *args, **kwargs: Response()
     )
-    target = upstream.prerelease_targets(
-        upstream._matrix(), data["airflow"], data["gx"]
-    )
+    target = upstream.prerelease_targets(matrix, data["airflow"], data["gx"])
     assert target.airflow == "3.4.0rc1"
     assert target.airflow_is_prerelease
     assert target.gx is None
@@ -172,13 +177,21 @@ def test_cli_emits_target_and_closed_gate_outputs(
         }[project],
     )
     output = tmp_path / "github-output"
-    assert upstream.main(["prerelease", "--github-output", str(output)]) == 0
+    matrix_args = ["--matrix", str(FROZEN_MATRIX)]
+    assert (
+        upstream.main(["prerelease", *matrix_args, "--github-output", str(output)]) == 0
+    )
     contents = output.read_text()
     assert "airflow=3.4.0rc1" in contents
     assert "airflow_is_prerelease=true" in contents
     assert "gx=" in contents
     output.write_text("")
-    assert upstream.main(["next-python-gate", "--github-output", str(output)]) == 0
+    assert (
+        upstream.main(
+            ["next-python-gate", *matrix_args, "--github-output", str(output)]
+        )
+        == 0
+    )
     contents = output.read_text()
     assert "next_python_gate=false" in contents
     assert "apache-airflow" in contents and "great-expectations" in contents
@@ -193,7 +206,7 @@ def test_drift_cli_returns_findings_and_fetch_failure_exit_two(
         "great-expectations": data["gx"],
     }
     monkeypatch.setattr(upstream, "fetch", lambda project: projects[project])
-    assert upstream.main(["drift"]) == 1
+    assert upstream.main(["drift", "--matrix", str(FROZEN_MATRIX)]) == 1
     output = capsys.readouterr().out
     assert "D1:" in output and "2.4.0" in output
     assert ">3.9" in output and ">=3.11" in output
@@ -204,7 +217,7 @@ def test_drift_cli_returns_findings_and_fetch_failure_exit_two(
         )
 
     monkeypatch.setattr(upstream, "fetch", fail)
-    assert upstream.main(["drift"]) == 2
+    assert upstream.main(["drift", "--matrix", str(FROZEN_MATRIX)]) == 2
     error = capsys.readouterr().err
     assert "apache-airflow-providers-common-sql" in error
     assert "https://pypi.org/pypi/apache-airflow-providers-common-sql/json" in error

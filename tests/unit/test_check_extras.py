@@ -17,6 +17,9 @@ ROOT = Path(__file__).parents[2]
 SCRIPT = ROOT / ".github/scripts/check_extras.py"
 FIXTURES = Path(__file__).parent / "fixtures/ci"
 RECORDED_CONSTRAINTS = FIXTURES / "airflow-2.11.2-constraints-3.11.txt"
+# The whole-run tests read this frozen matrix, not the checked-in one, so that a
+# routine matrix update does not change the lanes and counts they assert.
+FROZEN_MATRIX = FIXTURES / "support-matrix.toml"
 
 # Today's provider extras, other than the test and lint extras.
 EXTRAS = (
@@ -31,7 +34,7 @@ EXTRAS = (
     "spark",
     "trino",
 )
-# The eight lanes that today's matrix derives, as (Airflow release, Python).
+# The eight lanes that the frozen matrix derives, as (Airflow release, Python).
 LANES = (
     ("2.11.2", "3.11"),
     ("3.0.6", "3.11"),
@@ -379,7 +382,7 @@ def make_repo(tmp_path):
         root = tmp_path / "repo"
         (root / ".github").mkdir(parents=True, exist_ok=True)
         (root / ".github/support-matrix.toml").write_text(
-            (ROOT / ".github/support-matrix.toml").read_text("utf-8"), encoding="utf-8"
+            FROZEN_MATRIX.read_text("utf-8"), encoding="utf-8"
         )
         pyproject = (ROOT / "pyproject.toml").read_text("utf-8")
         marker = "\ntests = ["
