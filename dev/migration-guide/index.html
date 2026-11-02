@@ -565,6 +565,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade-from-1x-to-20-expect-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade from 1.x to 2.0: expect removed
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade from 1.x to 2.0: expect removed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-to-change_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors-you-will-see-if-you-do-not-migrate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors you will see if you do not migrate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -863,6 +902,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade-from-1x-to-20-expect-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade from 1.x to 2.0: expect removed
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade from 1.x to 2.0: expect removed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-to-change_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors-you-will-see-if-you-do-not-migrate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors you will see if you do not migrate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -897,7 +975,7 @@
 
 
 <h1 id="migration-guide">Migration guide</h1>
-<p>This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, <code>conn_id</code>, or <code>context_type</code>, see <a href="#upgrade-from-1x-to-20-gx-cloud-removal">Upgrade from 1.x to 2.0: GX Cloud removal</a>.</p>
+<p>This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, <code>conn_id</code>, or <code>context_type</code>, see <a href="#upgrade-from-1x-to-20-gx-cloud-removal">Upgrade from 1.x to 2.0: GX Cloud removal</a>. If you pass <code>expect</code> to <code>GXValidateBatchOperator</code> or <code>GXValidateDataFrameOperator</code>, see <a href="#upgrade-from-1x-to-20-expect-removed">Upgrade from 1.x to 2.0: <code>expect</code> removed</a>.</p>
 <p>Here is an overview of key differences between versions:</p>
 <table>
 <thead>
@@ -1113,6 +1191,75 @@ and can be used when configuring your Great Expectations data source within the 
 <p>Importing the removed hook module raises <code>ModuleNotFoundError</code>.</p>
 <h3 id="keeping-validation-results">Keeping validation results</h3>
 <p>To keep persistent results and view them in Data Docs, use a File Data Context with <code>GXValidateCheckpointOperator</code>; see the <a href="../getting-started/#checkpoint-operator">File Data Context setup step</a>. You can also read the operator's XCom <code>return_value</code> in a downstream task. Results no longer include a GX Cloud link.</p>
+<h2 id="upgrade-from-1x-to-20-expect-removed">Upgrade from 1.x to 2.0: <code>expect</code> removed</h2>
+<p>Provider 1.0.0 deprecated the <code>expect</code> parameter of <code>GXValidateBatchOperator</code> and <code>GXValidateDataFrameOperator</code> in favor of <code>configure_expectations</code>. Provider 2.0 removes <code>expect</code>, and <code>configure_expectations</code> is now a required parameter of both operators. <code>expect</code> took an Expectation or Expectation Suite object that your DAG file had to build when Airflow parsed it. <code>configure_expectations</code> takes a callable that receives the Data Context and returns an Expectation or Expectation Suite, so the operator calls it when the task runs, with the Data Context it creates. <code>GXValidateCheckpointOperator</code> never accepted <code>expect</code> and is not affected.</p>
+<h3 id="what-to-change_1">What to change</h3>
+<p>Replace <code>expect=&lt;Expectation or Expectation Suite&gt;</code> with <code>configure_expectations=&lt;callable&gt;</code>. The callable takes the Data Context as its only argument and returns what you previously passed as <code>expect</code>.</p>
+<p>Before (1.x):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">great_expectations.expectations</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gxe</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations_provider.operators.validate_dataframe</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">GXValidateDataFrameOperator</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">my_data_frame_operator</span> <span class="o">=</span> <span class="n">GXValidateDataFrameOperator</span><span class="p">(</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_data_frame_operator"</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">configure_dataframe</span><span class="o">=</span><span class="n">configure_dataframe</span><span class="p">,</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">expect</span><span class="o">=</span><span class="n">gxe</span><span class="o">.</span><span class="n">ExpectColumnValuesToBeBetween</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"age"</span><span class="p">,</span> <span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mi">120</span><span class="p">),</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>After (2.0):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations_provider.operators.validate_dataframe</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">GXValidateDataFrameOperator</span><span class="p">,</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations.data_context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractDataContext</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations.expectations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Expectation</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_expectations</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expectation</span><span class="p">:</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="c1"># import GX locally per Airflow best practices</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">great_expectations.expectations</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gxe</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="k">return</span> <span class="n">gxe</span><span class="o">.</span><span class="n">ExpectColumnValuesToBeBetween</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"age"</span><span class="p">,</span> <span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">my_data_frame_operator</span> <span class="o">=</span> <span class="n">GXValidateDataFrameOperator</span><span class="p">(</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_data_frame_operator"</span><span class="p">,</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="n">configure_dataframe</span><span class="o">=</span><span class="n">configure_dataframe</span><span class="p">,</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="n">configure_expectations</span><span class="o">=</span><span class="n">configure_expectations</span><span class="p">,</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>The same change applies to <code>GXValidateBatchOperator</code>. To validate an Expectation Suite, return the suite from the callable; see <a href="../getting-started/">getting started</a> for examples.</p>
+<h3 id="errors-you-will-see-if-you-do-not-migrate_1">Errors you will see if you do not migrate</h3>
+<p>At DAG parse, Airflow reports <code>TypeError</code> on Airflow 3 or <code>AirflowException</code> on Airflow 2 for invalid operator arguments. Which message you get depends on how the operator is called:</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>expect=</code> without <code>configure_expectations=</code>, which is the 1.x usage</td>
+<td><code>missing keyword argument 'configure_expectations'</code></td>
+</tr>
+<tr>
+<td><code>expect=</code> together with <code>configure_expectations=</code></td>
+<td><code>Invalid arguments were passed to &lt;Operator&gt; (task_id: ...)</code>, with <code>**kwargs: {'expect': ...}</code> among the invalid values</td>
+</tr>
+<tr>
+<td>Neither <code>expect=</code> nor <code>configure_expectations=</code></td>
+<td><code>missing keyword argument 'configure_expectations'</code></td>
+</tr>
+</tbody>
+</table>
+<p>Because the error is raised when the operator is constructed, the DAG fails to import rather than failing a task run.</p>
 
 
 
