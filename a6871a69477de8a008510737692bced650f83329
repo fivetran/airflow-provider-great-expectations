@@ -1,0 +1,25 @@
+tests/conftest.py
+  7800039f8f1a3cfc 1-14,16-40
+tests/unit/test_collection_guard.py
+  7800039f8f1a3cfc 1-21,40-62,65-69,71-128,151-154,156-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "a6871a69477de8a008510737692bced650f83329",
+  "prompts": {
+    "7800039f8f1a3cfc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "00ef8749-f1f3-4c53-b4d1-a574ffa8a350",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 196,
+      "total_deletions": 0,
+      "accepted_lines": 188,
+      "overriden_lines": 8
+    }
+  }
+}
