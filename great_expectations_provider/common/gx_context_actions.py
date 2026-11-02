@@ -10,7 +10,10 @@ if TYPE_CHECKING:
     from great_expectations.core.expectation_validation_result import (
         ExpectationSuiteValidationResult,
     )
-    from great_expectations.data_context import AbstractDataContext
+    from great_expectations.data_context import (
+        AbstractDataContext,
+        EphemeralDataContext,
+    )
     from great_expectations.expectations import Expectation
 
 
@@ -49,7 +52,7 @@ def run_validation_definition(
     return result
 
 
-def load_data_context() -> AbstractDataContext:
+def load_data_context() -> EphemeralDataContext:
     """Return a new ephemeral GX data context tagged with the provider's user agent.
 
     The mode is passed explicitly so GX never infers a context type from the environment.
