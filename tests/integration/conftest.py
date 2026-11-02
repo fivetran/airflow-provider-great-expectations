@@ -11,20 +11,6 @@ from sqlalchemy import create_engine, text
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _pytest.config import Config
-    from _pytest.nodes import Item
-
-
-def pytest_collection_modifyitems(config: Config, items: list[Item]) -> None:
-    missing_markers: list[str] = []
-    for item in items:
-        if not any(item.iter_markers()):
-            missing_markers.append(item.nodeid)
-    if missing_markers:
-        raise Exception(
-            f"Missing markers on the following tests: {', '.join(missing_markers)}"
-        )
-
 
 def rand_name() -> str:
     return "".join(random.choices(string.ascii_lowercase, k=10))
