@@ -1,0 +1,23 @@
+.github/workflows/canaries.yml
+  7800039f8f1a3cfc 1-102,104-152,154-238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "556770af2d2b54d067f9326b264f5e56ba93f869",
+  "prompts": {
+    "7800039f8f1a3cfc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "00ef8749-f1f3-4c53-b4d1-a574ffa8a350",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 236,
+      "overriden_lines": 0
+    }
+  }
+}
