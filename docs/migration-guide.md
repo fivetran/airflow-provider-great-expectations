@@ -1,6 +1,6 @@
 # Migration guide
 
-This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, `conn_id`, or `context_type`, see [Upgrade from 1.x to 2.0: GX Cloud removal](#upgrade-from-1x-to-20-gx-cloud-removal). If you use `GXValidateDataFrameOperator`, see [Upgrade from 1.x to 2.0: `configure_dataframe` runs when the task runs](#upgrade-from-1x-to-20-configure_dataframe-runs-when-the-task-runs).
+This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, `conn_id`, or `context_type`, see [Upgrade from 1.x to 2.0: GX Cloud removal](#upgrade-from-1x-to-20-gx-cloud-removal).
 
 Here is an overview of key differences between versions:
 
@@ -189,23 +189,3 @@ Importing the removed hook module raises `ModuleNotFoundError`.
 ### Keeping validation results
 
 To keep persistent results and view them in Data Docs, use a File Data Context with `GXValidateCheckpointOperator`; see the [File Data Context setup step](getting-started.md#checkpoint-operator). You can also read the operator's XCom `return_value` in a downstream task. Results no longer include a GX Cloud link.
-
-## Upgrade from 1.x to 2.0: `configure_dataframe` runs when the task runs
-
-In 1.x, `GXValidateDataFrameOperator` called your `configure_dataframe` function when the operator was constructed and kept the returned DataFrame on the operator. Airflow constructs operators whenever it parses the DAG file: the DAG processor parses each file repeatedly, and a worker parses it again to run any task in the DAG. As a result, `configure_dataframe` ran on every parse, even when no task was running, so reading a file, querying a warehouse, or creating a Spark session happened in the DAG processor. Provider 2.0 stores the function and calls it once each time the task runs, like the other `configure_*` functions.
-
-### What to change
-
-Most DAGs need no change. Check the following:
-
-| 1.x usage | 2.0 action |
-|---|---|
-| `configure_dataframe` has a side effect that you rely on at parse time, such as setting a global or registering an object | Move the side effect out of the function: into an upstream task, or into the top level of the DAG file if it must happen when the file is parsed. |
-| Code reads the operator's `dataframe` attribute | Stop reading it. The operator no longer holds a DataFrame. Call your `configure_dataframe` function yourself, or produce the data in an upstream task. |
-| `configure_dataframe` returns a small placeholder DataFrame when it is not running inside a task, to keep parsing fast | Delete the workaround. The function only runs inside the task. |
-
-### What you will see
-
-- Parsing the DAG file no longer calls `configure_dataframe`. The credentials and network access that the data source needs are required only where the task runs, not where the DAG file is parsed.
-- An error raised by `configure_dataframe` now fails the task, and the task's retries apply, instead of appearing as a DAG import error. The traceback is in the task log.
-- The function runs on every attempt of the task, so a retry reads the data source as it is then.
