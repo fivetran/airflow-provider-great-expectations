@@ -1,58 +1,178 @@
-name: "Lint"
+name: Lint
+
+# Every Airflow release, Python version and tool version comes from the `matrix`
+# job's outputs, which `.github/support-matrix.toml` drives. The type checker runs once
+# per compatibility tier, in an environment installed the way that tier's newest lane is
+# installed, and it receives that tier's version flags as always-true or always-false.
+# Adding a tier there adds its type-check run here with no edit to this file.
+#
+# No job needs repository credentials or an approval step, and every job holds a
+# read-only token, so the workflow runs unchanged for pull requests from forks. The jobs
+# are listed in the `needs` of `lint-passed`, the one check to require.
 
 on:
-  push: # Run on pushes to the default branch
+  pull_request:
     branches: [main]
-  pull_request: # Also run on pull requests originated from forks
+  push:
     branches: [main]
+  workflow_dispatch:
 
-# This allows a subsequently queued workflow run to interrupt and cancel previous runs
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions: {}
 
 jobs:
-  Authorize:
-    environment: ${{ github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository &&
-      'external' || 'internal' }}
-    runs-on: ubuntu-latest
+  matrix:
+    name: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions:
       contents: read
+    outputs:
+      typecheck: ${{ steps.emit.outputs.typecheck }}
+      lowest-python: ${{ steps.emit.outputs.lowest-python }}
+      uv-version: ${{ steps.emit.outputs.uv-version }}
     steps:
-      - run: true
-
-  format-and-type-check:
-    needs: Authorize
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Emit support matrix outputs
+        id: emit
+        run: python3 .github/scripts/support_matrix.py emit
+
+  # One run per compatibility tier, on the tier's newest Airflow line and the lowest
+  # supported Python. A tier whose environment can't be installed, or whose imports
+  # don't type-check, fails its own check and leaves the others running.
+  typecheck:
+    name: typecheck (${{ matrix.target.tier }}, Airflow ${{ matrix.target.lane.airflow }}, Python ${{ matrix.target.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.matrix.outputs.typecheck) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: 3.12
+          persist-credentials: false
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          version: "0.7.13"
+          python-version: ${{ matrix.target.lane.python }}
 
-      - name: Install dependencies
-        run: uv pip install --system  -e ".[lint]"
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
 
-      - name: Check code formatting
-        run: uv run ruff format --check .
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.target.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.target.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.target.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras lint
 
-      - name: Run linter
-        run: uv run ruff check .
+      # The tier's flags arrive as a JSON list with one `--always-true=NAME` or
+      # `--always-false=NAME` entry per name, because mypy's command line doesn't split
+      # names joined by commas. The list is read into an array, so each entry stays one
+      # argument. The echoed command line shows exactly which flags this run used.
+      - name: Type-check the tier
+        env:
+          MYPY_ARGS: ${{ toJSON(matrix.target.mypy_args) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=()
+          while IFS= read -r flag; do
+            flags+=("$flag")
+          done < <(jq -r '.[]' <<< "$MYPY_ARGS")
+          set -x
+          mypy --pretty --no-error-summary "${flags[@]}" .
 
-      - name: Type checking
-        run: uv run mypy --pretty --no-error-summary .
+  # The formatter, the linter and the CI scripts' type check need no Airflow, so this
+  # job reports even while a tier's environment is red. mypy skips directories that
+  # start with a dot, so the CI scripts get their own run.
+  ruff:
+    name: ruff
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ needs.matrix.outputs.lowest-python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the pinned tools
+        env:
+          LANE_PYTHON: ${{ needs.matrix.outputs.lowest-python }}
+        run: python .github/scripts/lane_install.py --mode tools --python "$LANE_PYTHON"
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type-check the CI scripts
+        run: mypy .github/scripts
+
+  lint-passed:
+    name: lint-passed
+    # Runs even when a needed job failed, was cancelled or was skipped, and then
+    # fails. A failed `matrix` skips every other job, so the gate fails then too.
+    if: ${{ always() }}
+    needs:
+      - matrix
+      - typecheck
+      - ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      NEEDS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require every needed job to succeed
+        shell: bash
+        run: |
+          set -euo pipefail
+          results="$(jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' <<< "$NEEDS")"
+          {
+            echo '### Required jobs'
+            echo
+            echo '| Job | Result |'
+            echo '| --- | --- |'
+            while IFS=$'\t' read -r job result; do
+              echo "| ${job} | ${result} |"
+            done <<< "$results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$results"
+          if [ -z "$results" ]; then
+            echo "error: no jobs to check" >&2
+            exit 1
+          fi
+          failed="$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' <<< "$NEEDS")"
+          if [ -n "$failed" ]; then
+            echo "error: these jobs did not succeed:" >&2
+            printf '%s\n' "$failed" >&2
+            exit 1
+          fi
