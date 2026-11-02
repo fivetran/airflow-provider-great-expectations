@@ -79,10 +79,20 @@ class TestValidateCheckpointOperator:
         def configure_context() -> FileDataContext:
             return gx.get_context(mode="file", project_root_dir=tmp_path)
 
+        ran_checkpoint_names: list[str] = []
+
+        def configure_and_record_checkpoint(
+            context: AbstractDataContext,
+        ) -> gx.Checkpoint:
+            checkpoint = configure_checkpoint(context)
+            ran_checkpoint_names.append(checkpoint.name)
+            return checkpoint
+
         validate_checkpoint = GXValidateCheckpointOperator(
+            context_type="file",
             configure_file_data_context=configure_context,
             task_id="file_context",
-            configure_checkpoint=configure_checkpoint,
+            configure_checkpoint=configure_and_record_checkpoint,
             batch_parameters={"dataframe": data_frame},
         )
 
@@ -92,6 +102,14 @@ class TestValidateCheckpointOperator:
         # Get the result from xcom_push call
         pushed_result = mock_ti.xcom_push.call_args[1]["value"]
         assert pushed_result["success"] is True
+
+        # The checkpoint must have been created in the file context at tmp_path,
+        # not in some other context the operator fell back to.
+        assert len(ran_checkpoint_names) == 1
+        reopened_context = gx.get_context(mode="file", project_root_dir=tmp_path)
+        assert [cp.name for cp in reopened_context.checkpoints.all()] == (
+            ran_checkpoint_names
+        )
 
     @pytest.mark.integration
     def test_with_ephemeral_context(
