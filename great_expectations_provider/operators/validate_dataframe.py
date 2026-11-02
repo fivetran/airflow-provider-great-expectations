@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Callable, Literal
 
 from airflow.models import BaseOperator
@@ -32,7 +31,7 @@ class GXValidateDataFrameOperator(BaseOperator):
 
     Args:
         task_id: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.
-        configure_dataframe: A callable which returns the DataFrame to be validated.
+        configure_dataframe: A callable which returns the DataFrame to be validated, invoked when the task runs.
         configure_expectations: A callable that takes an AbstractDataContext and returns an Expectation or
             ExpectationSuite to validate against the DataFrame. Available Expectations can be found at
             https://greatexpectations.io/expectations.
@@ -49,59 +48,37 @@ class GXValidateDataFrameOperator(BaseOperator):
         ],
         configure_expectations: Callable[
             [AbstractDataContext], Expectation | ExpectationSuite
-        ]
-        | None = None,
+        ],
         result_format: (
             Literal["BOOLEAN_ONLY", "BASIC", "SUMMARY", "COMPLETE"] | None
         ) = None,
         *args,
         **kwargs,
     ) -> None:
-        # Handle deprecated 'expect' parameter - store directly for serialization safety
-        # Must pop before calling super().__init__() as Airflow 3 rejects unknown kwargs
-        self._deprecated_expect: Expectation | ExpectationSuite | None = None
-        if "expect" in kwargs:
-            warnings.warn(
-                "The 'expect' parameter is deprecated. Use 'configure_expectations' instead. "
-                "Pass a callable that takes an AbstractDataContext and returns an Expectation or ExpectationSuite.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self._deprecated_expect = kwargs.pop("expect")
-
         super().__init__(*args, **kwargs)
 
-        if configure_expectations is None and self._deprecated_expect is None:
-            raise ValueError("configure_expectations is required")
-
-        self.dataframe = configure_dataframe()
+        self.configure_dataframe = configure_dataframe
         self.configure_expectations = configure_expectations
         self.result_format = result_format
 
     def execute(self, context: Context) -> None:
         from pandas import DataFrame
 
+        dataframe = self.configure_dataframe()
         gx_context = load_data_context()
 
-        if isinstance(self.dataframe, DataFrame):
+        if isinstance(dataframe, DataFrame):
             batch_definition = self._get_pandas_batch_definition(gx_context)
-        elif type(self.dataframe).__name__ == "DataFrame":
+        elif type(dataframe).__name__ == "DataFrame":
             # if it's not pandas, but the classname is Dataframe, we assume spark
             batch_definition = self._get_spark_batch_definition(gx_context)
         else:
-            raise ValueError(
-                f"Unsupported dataframe type: {type(self.dataframe).__name__}"
-            )
+            raise ValueError(f"Unsupported dataframe type: {type(dataframe).__name__}")
 
-        if self.configure_expectations is not None:
-            expect = self.configure_expectations(gx_context)
-        elif self._deprecated_expect is not None:
-            expect = self._deprecated_expect
-        else:
-            raise ValueError("configure_expectations is required")
+        expect = self.configure_expectations(gx_context)
 
         batch_parameters = {
-            "dataframe": self.dataframe,
+            "dataframe": dataframe,
         }
         result = run_validation_definition(
             task_id=self.task_id,

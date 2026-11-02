@@ -5,6 +5,7 @@ from unittest.mock import Mock, create_autospec
 
 import pandas as pd
 import pytest
+from airflow.exceptions import AirflowException
 from great_expectations import ExpectationSuite
 from great_expectations.core import ExpectationValidationResult
 from great_expectations.data_context import AbstractDataContext, EphemeralDataContext
@@ -405,8 +406,45 @@ class TestValidateDataFrameOperator:
         result = call_args[1]["value"]
         assert result["success"] is False
 
-    def test_deprecated_expect_parameter_raises_warning(self) -> None:
-        """Expect that using deprecated 'expect' parameter raises DeprecationWarning but still works."""
+    def test_expect_parameter_is_rejected(self) -> None:
+        """Expect that the removed 'expect' parameter fails at construction as an invalid argument."""
+
+        # arrange
+        column_name = "col_A"
+
+        def configure_dataframe() -> pd.DataFrame:
+            return pd.DataFrame({column_name: ["a", "b", "c"]})
+
+        def configure_expectations(
+            context: AbstractDataContext,
+        ) -> ExpectColumnValuesToBeInSet:
+            return ExpectColumnValuesToBeInSet(
+                column=column_name,
+                value_set=["a", "b", "c"],  # type: ignore[arg-type]
+            )
+
+        expect = ExpectColumnValuesToBeInSet(
+            column=column_name,
+            value_set=["a"],  # type: ignore[arg-type]
+        )
+
+        # act & assert
+        with pytest.raises(
+            (AirflowException, TypeError), match="Invalid arguments were passed"
+        ) as exc_info:
+            GXValidateDataFrameOperator(
+                task_id="validate_df_expect",
+                configure_dataframe=configure_dataframe,
+                configure_expectations=configure_expectations,
+                expect=expect,
+            )
+        assert "'expect'" in str(exc_info.value)
+
+    def test_expect_parameter_without_configure_expectations_is_rejected(
+        self,
+    ) -> None:
+        """Expect that a 1.x style call passing only 'expect' fails at construction."""
+
         # arrange
         column_name = "col_A"
 
@@ -415,39 +453,149 @@ class TestValidateDataFrameOperator:
 
         expect = ExpectColumnValuesToBeInSet(
             column=column_name,
-            value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
+            value_set=["a"],  # type: ignore[arg-type]
         )
 
         # act & assert
-        with pytest.warns(
-            DeprecationWarning, match="The 'expect' parameter is deprecated"
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
         ):
-            validate_df = GXValidateDataFrameOperator(
-                task_id="validate_df_deprecated",
+            GXValidateDataFrameOperator(  # type: ignore[call-arg]
+                task_id="validate_df_expect_only",
                 configure_dataframe=configure_dataframe,
                 expect=expect,
             )
 
-        # Verify it still works
-        mock_ti = Mock()
-        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
-        validate_df.execute(context=context)
-        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
-        assert pushed_result["success"] is True
-
-    def test_missing_configure_expectations_raises_value_error(self) -> None:
-        """Expect that omitting both 'configure_expectations' and deprecated 'expect' raises ValueError."""
+    def test_missing_configure_expectations_is_rejected(self) -> None:
+        """Expect that omitting 'configure_expectations' fails at construction."""
 
         # arrange
         def configure_dataframe() -> pd.DataFrame:
             return pd.DataFrame({"col": [1, 2, 3]})
 
         # act & assert
-        with pytest.raises(ValueError, match="configure_expectations is required"):
-            GXValidateDataFrameOperator(
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
+        ):
+            GXValidateDataFrameOperator(  # type: ignore[call-arg]
                 task_id="validate_df_missing",
                 configure_dataframe=configure_dataframe,
             )
+
+    def test_construction_does_not_call_configure_dataframe(self) -> None:
+        """Expect that constructing the operator, as DAG parsing does, loads no data."""
+
+        # arrange
+        configure_dataframe = Mock(return_value=pd.DataFrame({"col_A": ["a"]}))
+
+        # act
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_construction",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=Mock(),
+        )
+
+        # assert
+        configure_dataframe.assert_not_called()
+        assert validate_df.configure_dataframe is configure_dataframe
+        assert not hasattr(validate_df, "dataframe")
+
+    def test_execute_calls_configure_dataframe_once_and_validates_its_result(
+        self,
+    ) -> None:
+        """Expect that execute() loads the DataFrame exactly once and validates that DataFrame."""
+
+        # arrange
+        column_name = "col_A"
+        configure_dataframe = Mock(
+            return_value=pd.DataFrame({column_name: ["a", "b", "c", "d"]})
+        )
+        expect = ExpectColumnValuesToBeInSet(
+            column=column_name,
+            value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
+        )
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_execute_loads_data",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=lambda context: expect,
+        )
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        calls_after_construction = configure_dataframe.call_count
+        validate_df.execute(context=context)
+
+        # assert
+        assert calls_after_construction == 0
+        configure_dataframe.assert_called_once_with()
+        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
+        assert pushed_result["success"] is True
+        # the four rows returned by configure_dataframe are the rows validated
+        assert pushed_result["expectations"][0]["result"]["element_count"] == 4
+
+    def test_each_execute_calls_configure_dataframe_again(self) -> None:
+        """Expect that every run loads fresh data, so a retry sees the source as it is now."""
+
+        # arrange
+        column_name = "col_A"
+        configure_dataframe = Mock(
+            side_effect=[
+                pd.DataFrame({column_name: ["a", "b", "c"]}),
+                pd.DataFrame({column_name: ["x", "y", "z"]}),
+            ]
+        )
+
+        def configure_expectations(
+            context: AbstractDataContext,
+        ) -> ExpectColumnValuesToBeInSet:
+            # a new Expectation per run: GX does not accept one that a previous run has used
+            return ExpectColumnValuesToBeInSet(
+                column=column_name,
+                value_set=["a", "b", "c"],  # type: ignore[arg-type]
+            )
+
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_execute_reloads_data",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=configure_expectations,
+        )
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        validate_df.execute(context=context)
+        with pytest.raises(GXValidationFailed):
+            validate_df.execute(context=context)
+
+        # assert
+        assert configure_dataframe.call_count == 2
+
+    def test_configure_dataframe_error_is_raised_by_execute_not_construction(
+        self,
+    ) -> None:
+        """Expect that a failing data source fails the task, not the DAG import."""
+
+        # arrange
+        def configure_dataframe() -> pd.DataFrame:
+            raise ConnectionError("data source unavailable")
+
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_source_unavailable",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=Mock(),
+        )
+
+        # assert
+        with pytest.raises(ConnectionError, match="data source unavailable"):
+            validate_df.execute(context=context)
+        mock_ti.xcom_push.assert_not_called()
 
     @pytest.fixture
     def mock_gx_no_datasource(

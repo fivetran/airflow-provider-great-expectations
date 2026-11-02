@@ -1,6 +1,6 @@
 # Migration guide
 
-This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, `conn_id`, or `context_type`, see [Upgrade from 1.x to 2.0: GX Cloud removal](#upgrade-from-1x-to-20-gx-cloud-removal).
+This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, `conn_id`, or `context_type`, see [Upgrade from 1.x to 2.0: GX Cloud removal](#upgrade-from-1x-to-20-gx-cloud-removal). If you pass `expect` to `GXValidateBatchOperator` or `GXValidateDataFrameOperator`, see [Upgrade from 1.x to 2.0: `expect` removed](#upgrade-from-1x-to-20-expect-removed).
 
 Here is an overview of key differences between versions:
 
@@ -189,3 +189,70 @@ Importing the removed hook module raises `ModuleNotFoundError`.
 ### Keeping validation results
 
 To keep persistent results and view them in Data Docs, use a File Data Context with `GXValidateCheckpointOperator`; see the [File Data Context setup step](getting-started.md#checkpoint-operator). You can also read the operator's XCom `return_value` in a downstream task. Results no longer include a GX Cloud link.
+
+## Upgrade from 1.x to 2.0: `expect` removed
+
+Provider 1.0.0 deprecated the `expect` parameter of `GXValidateBatchOperator` and `GXValidateDataFrameOperator` in favor of `configure_expectations`. Provider 2.0 removes `expect`, and `configure_expectations` is now a required parameter of both operators. `expect` took an Expectation or Expectation Suite object that your DAG file had to build when Airflow parsed it. `configure_expectations` takes a callable that receives the Data Context and returns an Expectation or Expectation Suite, so the operator calls it when the task runs, with the Data Context it creates. `GXValidateCheckpointOperator` never accepted `expect` and is not affected.
+
+### What to change
+
+Replace `expect=<Expectation or Expectation Suite>` with `configure_expectations=<callable>`. The callable takes the Data Context as its only argument and returns what you previously passed as `expect`.
+
+Before (1.x):
+
+```python
+import great_expectations.expectations as gxe
+
+from great_expectations_provider.operators.validate_dataframe import (
+    GXValidateDataFrameOperator,
+)
+
+my_data_frame_operator = GXValidateDataFrameOperator(
+    task_id="my_data_frame_operator",
+    configure_dataframe=configure_dataframe,
+    expect=gxe.ExpectColumnValuesToBeBetween(column="age", min_value=0, max_value=120),
+)
+```
+
+After (2.0):
+
+```python
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from great_expectations_provider.operators.validate_dataframe import (
+    GXValidateDataFrameOperator,
+)
+
+if TYPE_CHECKING:
+    from great_expectations.data_context import AbstractDataContext
+    from great_expectations.expectations import Expectation
+
+
+def configure_expectations(context: AbstractDataContext) -> Expectation:
+    # import GX locally per Airflow best practices
+    import great_expectations.expectations as gxe
+
+    return gxe.ExpectColumnValuesToBeBetween(column="age", min_value=0, max_value=120)
+
+
+my_data_frame_operator = GXValidateDataFrameOperator(
+    task_id="my_data_frame_operator",
+    configure_dataframe=configure_dataframe,
+    configure_expectations=configure_expectations,
+)
+```
+
+The same change applies to `GXValidateBatchOperator`. To validate an Expectation Suite, return the suite from the callable; see [getting started](getting-started.md) for examples.
+
+### Errors you will see if you do not migrate
+
+At DAG parse, Airflow reports `TypeError` on Airflow 3 or `AirflowException` on Airflow 2 for invalid operator arguments. Which message you get depends on how the operator is called:
+
+| Call | Message |
+|---|---|
+| `expect=` without `configure_expectations=`, which is the 1.x usage | `missing keyword argument 'configure_expectations'` |
+| `expect=` together with `configure_expectations=` | `Invalid arguments were passed to <Operator> (task_id: ...)`, with `**kwargs: {'expect': ...}` among the invalid values |
+| Neither `expect=` nor `configure_expectations=` | `missing keyword argument 'configure_expectations'` |
+
+Because the error is raised when the operator is constructed, the DAG fails to import rather than failing a task run.
