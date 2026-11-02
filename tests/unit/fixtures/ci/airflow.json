@@ -1,0 +1,2989 @@
+{
+  "info": {
+    "name": "apache-airflow",
+    "version": "3.3.2",
+    "classifiers": [
+      "Development Status :: 5 - Production/Stable",
+      "Environment :: Console",
+      "Environment :: Web Environment",
+      "Framework :: Apache Airflow",
+      "Intended Audience :: Developers",
+      "Intended Audience :: System Administrators",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+      "Programming Language :: Python :: 3.14",
+      "Topic :: System :: Monitoring"
+    ],
+    "requires_python": "!=3.15,>=3.10"
+  },
+  "releases": {
+    "1.10.0": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10rc3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10rc4": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.10rc5": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.11": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": true
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": true
+      }
+    ],
+    "1.10.11rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.11rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.12": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.12rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.12rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.12rc3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.12rc4": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.13": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": true
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": true
+      }
+    ],
+    "1.10.13rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.14": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.14rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.14rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.14rc3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.14rc4": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.15": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.15rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.1b1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+        "yanked": false
+      }
+    ],
+    "1.10.1rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+        "yanked": false
+      }
+    ],
+    "1.10.2": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.2b2": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.2rc1": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.2rc2": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.2rc3": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.10.3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.3b1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.3b2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.3rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.3rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4b2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4rc3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4rc4": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.4rc5": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.5": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.5rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.6": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.6rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.6rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.7": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.7rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.7rc2": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.7rc3": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.8": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.8rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.9": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.10.9rc1": [
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      },
+      {
+        "requires_python": ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
+        "yanked": false
+      }
+    ],
+    "1.8.1": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.8.2": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.8.2rc1": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "1.9.0": [
+      {
+        "requires_python": null,
+        "yanked": false
+      }
+    ],
+    "2.0.0": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0b1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0b2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0b3": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.0rc3": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.1rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.1rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.0.2rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.0": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.0rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.0rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.1rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.2rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.3": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.3rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.4": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.4rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.1.4rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.10.0": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.0b1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.0b2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.0rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.1rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.2rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.3": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.3rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.3rc2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.10.4": [
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      }
+    ],
+    "2.10.4rc1": [
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      }
+    ],
+    "2.10.5": [
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      }
+    ],
+    "2.10.5rc1": [
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.8.1",
+        "yanked": false
+      }
+    ],
+    "2.11.0": [
+      {
+        "requires_python": "<3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "2.11.0rc1": [
+      {
+        "requires_python": "<3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "2.11.1": [
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "2.11.1rc1": [
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "2.11.1rc2": [
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "2.11.2": [
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "2.11.2rc1": [
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "2.2.0": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.0b1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.0b2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.0rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.1rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.1rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.2rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.2rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.3": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.3rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.3rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.4": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.4rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.5": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.5rc1": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.5rc2": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.2.5rc3": [
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.6",
+        "yanked": false
+      }
+    ],
+    "2.3.0": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.0b1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.0rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.0rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.1rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.2rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.2rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.3rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.3rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.3rc3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.4": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.3.4rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.0": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.0b1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.0rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.1rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.2rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.4.3rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.0": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.0rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.0rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.0rc3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.1rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.1rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.2rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.2rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.3rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.5.3rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0b1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0rc3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0rc4": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.0rc5": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.1rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.1rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.1rc3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.2rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.2rc2": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.3": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.6.3rc1": [
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.7",
+        "yanked": false
+      }
+    ],
+    "2.7.0": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.0b1": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.0rc1": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.0rc2": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.1": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.1rc1": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.1rc2": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.2": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.2rc1": [
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.3": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.7.3rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0b1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0rc2": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0rc3": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.0rc4": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.1rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.2": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.2rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.2rc2": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.2rc3": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.3": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.3rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.4": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.8.4rc1": [
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.12,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0b1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0b2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0rc2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.0rc3": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.1rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.1rc2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.2": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.2rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.3": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "2.9.3rc1": [
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.8",
+        "yanked": false
+      }
+    ],
+    "3.0.0": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0b4": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc1.post1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc1.post2": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc1.post3": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc1.post4": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc2": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc3": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.0rc4": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.1rc1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.2": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.2rc1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.2rc2": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc1": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc2": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc3": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc4": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc5": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.3rc6": [
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.13,~=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.4": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.4rc1": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.4rc2": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.5": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": true
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": true
+      }
+    ],
+    "3.0.5rc1": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.5rc2": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.5rc3": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.6": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.6rc1": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.0.6rc2": [
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.13,>=3.9",
+        "yanked": false
+      }
+    ],
+    "3.1.0": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.0b1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.0b2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.0rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.0rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.1rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.1rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.2rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.2rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.3": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.3rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.4": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": true
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": true
+      }
+    ],
+    "3.1.4rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.4rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.5": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.5rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.6": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.6rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.7": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.7rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.7rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.8": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.8rc1": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.1.8rc2": [
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "<3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.0": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.0b1": [
+      {
+        "requires_python": "!=3.14,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.14,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.0b2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.0rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.0rc2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.1rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.1rc2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.1rc3": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.2rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.2rc2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.2.2rc3": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.0": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.0b1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.0b2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.0rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.0rc2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.1rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.1rc2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.2": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.3.2rc1": [
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.10",
+        "yanked": false
+      }
+    ],
+    "3.4.0b1": [
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      }
+    ],
+    "3.4.0b2": [
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      }
+    ],
+    "3.4.0rc1": [
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      },
+      {
+        "requires_python": "!=3.15,>=3.11",
+        "yanked": false
+      }
+    ]
+  }
+}

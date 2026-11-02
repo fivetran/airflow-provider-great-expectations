@@ -1,0 +1,493 @@
+name: Tests
+
+# Every Airflow release, Python version, resolver version and service image comes
+# from the `matrix` job's outputs, which `.github/support-matrix.toml` drives. Adding
+# a lane or a service version there changes what runs here with no edit to this file.
+#
+# No job needs repository credentials or an approval step, and every job holds a
+# read-only token, so the workflow runs unchanged for pull requests from forks. Each
+# job that should block a merge is listed in the `needs` of `tests-passed`, the one
+# check to require. The one write permission, on `report`, is granted only to a
+# scheduled run, so it never reaches a pull request.
+#
+# The workflow also runs weekly on the default branch, whether or not a commit has
+# landed, and on demand. A failed scheduled run opens or updates a tracking issue.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "43 6 * * 1"
+  workflow_dispatch:
+
+# A pull request has its own group, and a push, a scheduled run or a manual run groups by
+# ref. A run is cancelled only by a newer run of the same pull request, so scheduled and
+# manual runs never cancel, and are never cancelled by, a pull request's runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  matrix:
+    name: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      lanes: ${{ steps.emit.outputs.lanes }}
+      postgres: ${{ steps.emit.outputs.postgres }}
+      postgres-image: ${{ steps.emit.outputs.postgres-image }}
+      spark: ${{ steps.emit.outputs.spark }}
+      spark-image: ${{ steps.emit.outputs.spark-image }}
+      pyspark-version: ${{ steps.emit.outputs.pyspark-version }}
+      canary-latest: ${{ steps.emit.outputs.canary-latest }}
+      canary-lowest-direct: ${{ steps.emit.outputs.canary-lowest-direct }}
+      uv-version: ${{ steps.emit.outputs.uv-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Emit support matrix outputs
+        id: emit
+        run: python3 .github/scripts/support_matrix.py emit
+
+  consistency:
+    name: consistency
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Check the declared ranges and docs against the support matrix
+        run: >-
+          uv run --no-project --with-requirements .github/scripts/requirements.txt
+          python .github/scripts/support_matrix.py check
+
+  extras:
+    name: extras
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Check that every extra resolves to its drivers on every lane
+        run: python3 .github/scripts/check_extras.py
+
+  unit:
+    name: unit (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.lanes) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+  integration:
+    name: integration (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.lanes) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        id: install
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras tests
+
+      - name: Smoke-test the example DAGs
+        run: .github/scripts/run_example_dags.sh
+
+      # A failed smoke test must not hide the integration results, so this step runs
+      # whenever the lane installed, unless the run was cancelled.
+      - name: Run the integration tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pytest -m integration tests -ra
+
+  # The service jobs run the tests that need a database or a Spark server, on the lanes
+  # that `[services.*]` names in the support matrix. The Postgres and Spark images
+  # carry a tag and a digest, and both come from the `matrix` job's outputs.
+  postgres:
+    name: postgres (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.postgres) }}
+    # Throwaway values for a database that exists only for this job. The `env` context
+    # isn't available to `services`, so the service below repeats the first three.
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PORT: "5432"
+    services:
+      postgres:
+        image: ${{ needs.matrix.outputs.postgres-image }} # zizmor: ignore[unpinned-images] the matrix job emits the tag and digest reference, which zizmor cannot resolve from an expression.
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Steps start once the server accepts connections over TCP. The image's
+        # temporary start-up server listens only on a Unix socket, so a socket check
+        # could pass before the real server is up.
+        options: >-
+          --health-cmd "pg_isready --host localhost --username postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras postgresql,tests
+
+      - name: Run the Postgres tests
+        run: pytest -m postgres tests -ra
+
+  # PySpark runs a local Spark session on the runner's default JDK, so this job has no
+  # service. The pin sits under the lane's constraints file, so the lanes that
+  # `[services.spark]` names must be ones whose constraints leave pyspark unpinned.
+  spark:
+    name: spark (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }}, PySpark ${{ needs.matrix.outputs.pyspark-version }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.spark) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          PYSPARK_VERSION: ${{ needs.matrix.outputs.pyspark-version }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras spark,tests
+          --with "pyspark==$PYSPARK_VERSION"
+
+      - name: Run the Spark tests
+        run: pytest -m spark_integration tests -ra
+
+  # A Spark Connect client and server must run the same Spark version, so the server
+  # image and the PySpark pin both come from the matrix, and they agree by construction.
+  spark-connect:
+    name: spark-connect (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }}, PySpark ${{ needs.matrix.outputs.pyspark-version }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.spark) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          PYSPARK_VERSION: ${{ needs.matrix.outputs.pyspark-version }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras spark,tests
+          --with "pyspark==$PYSPARK_VERSION"
+
+      - name: Start the Spark Connect server
+        env:
+          SPARK_IMAGE: ${{ needs.matrix.outputs.spark-image }}
+        run: >-
+          docker compose -f docker/spark/docker-compose.yml up --detach --quiet-pull
+          --wait --wait-timeout 120
+
+      - name: Run the Spark Connect tests
+        run: pytest -m spark_connect_integration tests -ra
+
+      - name: Show the Spark Connect server log
+        if: ${{ failure() }}
+        run: docker compose -f docker/spark/docker-compose.yml logs --no-color
+
+  # The canaries run on every pull request and every scheduled run, and both block the
+  # gate. The latest canary installs the newest release of every dependency, with no
+  # constraints file, on the highest Python in the matrix. The lowest-direct canary
+  # resolves the provider's direct dependencies to the lowest versions that
+  # `pyproject.toml` admits, once at the declared Airflow floor and once at the oldest
+  # Airflow line that supports the highest Python, each under its release's constraints.
+  canary-latest:
+    name: canary-latest (Python ${{ fromJSON(needs.matrix.outputs.canary-latest).python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CANARY_PYTHON: ${{ fromJSON(needs.matrix.outputs.canary-latest).python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.CANARY_PYTHON }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the newest release of every dependency
+        id: install
+        run: >-
+          python .github/scripts/lane_install.py --mode latest
+          --python "$CANARY_PYTHON" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+      # A failed unit test must not hide the smoke-test result, so this step runs
+      # whenever the canary installed, unless the run was cancelled.
+      - name: Smoke-test the example DAGs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .github/scripts/run_example_dags.sh
+
+  canary-lowest-direct:
+    name: canary-lowest-direct (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.canary-lowest-direct) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      # Each entry carries a constraints URL or a template, never both, and the installer
+      # treats the empty one as absent. A release with no constraints file for the
+      # lane's Python fails here, naming the missing file, and never falls back.
+      - name: Install the lane at the lowest direct versions
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          LANE_CONSTRAINTS_TEMPLATE: ${{ matrix.lane.constraints_template }}
+        run: >-
+          python .github/scripts/lane_install.py --mode lowest-direct
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL"
+          --constraints-template "$LANE_CONSTRAINTS_TEMPLATE" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+  tests-passed:
+    name: tests-passed
+    # Runs even when a needed job failed, was cancelled or was skipped, and then
+    # fails. A failed `matrix` skips every other job, so the gate fails then too.
+    if: ${{ always() }}
+    needs:
+      - matrix
+      - consistency
+      - extras
+      - unit
+      - integration
+      - postgres
+      - spark
+      - spark-connect
+      - canary-latest
+      - canary-lowest-direct
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      NEEDS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require every needed job to succeed
+        shell: bash
+        run: |
+          set -euo pipefail
+          results="$(jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' <<< "$NEEDS")"
+          {
+            echo '### Required jobs'
+            echo
+            echo '| Job | Result |'
+            echo '| --- | --- |'
+            while IFS=$'\t' read -r job result; do
+              echo "| ${job} | ${result} |"
+            done <<< "$results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$results"
+          if [ -z "$results" ]; then
+            echo "error: no jobs to check" >&2
+            exit 1
+          fi
+          failed="$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' <<< "$NEEDS")"
+          if [ -n "$failed" ]; then
+            echo "error: these jobs did not succeed:" >&2
+            printf '%s\n' "$failed" >&2
+            exit 1
+          fi
+
+  # Opens or updates the tracking issue when a scheduled run fails. The gate fails
+  # whenever any job it needs did not succeed, so this one condition covers them all.
+  # `!cancelled()` keeps a run that someone cancelled from opening an issue.
+  report:
+    name: Report scheduled failure
+    needs: tests-passed
+    if: ${{ !cancelled() && needs.tests-passed.result == 'failure' && github.event_name == 'schedule' }}
+    uses: ./.github/workflows/report-scheduled-failure.yml # zizmor: ignore[self-repository] actionlint does not yet parse the $/ form; ./ resolves the called workflow from the caller's commit.
+    permissions:
+      issues: write # the called workflow opens or comments on the tracking issue, and does nothing else
+    with:
+      workflow: ${{ github.workflow }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

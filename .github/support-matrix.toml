@@ -1,0 +1,75 @@
+schema_version = 1
+
+[policy]
+reference_provider = "apache-airflow-providers-common-sql"
+
+[python]
+supported = ["3.11", "3.12", "3.13", "3.14"]
+next = "3.15"
+
+[[airflow]]
+line = "2.11"
+release = "2.11.2"
+tier = "2.11"
+python = ["3.11", "3.12"]
+
+[[airflow]]
+line = "3.0"
+release = "3.0.6"
+tier = "3.0"
+python = ["3.11", "3.12"]
+
+[[airflow]]
+line = "3.1"
+release = "3.1.8"
+tier = "3.1+"
+python = ["3.11", "3.12", "3.13"]
+
+[[airflow]]
+line = "3.2"
+release = "3.2.2"
+tier = "3.1+"
+python = ["3.11", "3.12", "3.13", "3.14"]
+
+[[airflow]]
+line = "3.3"
+release = "3.3.2"
+tier = "3.1+"
+python = ["3.11", "3.12", "3.13", "3.14"]
+
+[tiers."2.11"]
+always_true = []
+always_false = ["AIRFLOW_V_3_0_PLUS", "AIRFLOW_V_3_1_PLUS"]
+
+[tiers."3.0"]
+always_true = ["AIRFLOW_V_3_0_PLUS"]
+always_false = ["AIRFLOW_V_3_1_PLUS"]
+
+[tiers."3.1+"]
+always_true = ["AIRFLOW_V_3_0_PLUS", "AIRFLOW_V_3_1_PLUS"]
+always_false = []
+
+[install]
+constraints_url = "https://raw.githubusercontent.com/apache/airflow/constraints-{airflow}/constraints-{python}.txt"
+uv = "0.11.24"
+
+[services.postgres]
+image = "postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5"
+lanes = ["floor", "newest"]
+
+[services.spark]
+image = "apache/spark:4.1.3-java17@sha256:9b0a6c2c860f5e7d18dd5270286fef32a09c7f5a7e2b0dbe5642de8a3a02ab3e"
+pyspark = "4.1.3"
+lanes = ["newest"]
+
+[extras]
+athena = ["pyathena"]
+azure = ["azure-storage-blob"]
+bigquery = ["google-cloud-bigquery", "sqlalchemy-bigquery"]
+gcp = ["google-cloud-storage"]
+mssql = ["pyodbc"]
+postgresql = ["psycopg2-binary"]
+s3 = ["boto3"]
+snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy"]
+spark = ["pyspark", "grpcio"]
+trino = ["trino"]

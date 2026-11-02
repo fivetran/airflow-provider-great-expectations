@@ -5,6 +5,8 @@ from great_expectations_provider.common.errors import (
     extract_validation_failure_context,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestExtractValidationFailureContext:
     """Test the extract_validation_failure_context function."""

@@ -2,7 +2,7 @@
 
 This document describes the process for releasing new versions of the `airflow-provider-great-expectations` package to PyPI.
 
-Releases are triggered by creating a GitHub Release. The workflow automatically publishes to PyPI when a release is created.
+Releases are triggered by publishing a GitHub Release. The workflow automatically publishes to PyPI when a GitHub release is published.
 
 ## Release Steps
 
@@ -72,7 +72,7 @@ git push origin X.Y.Z
 
 ### 6. Automated Publishing
 
-Once the GitHub Release is created, the CI workflow will automatically:
+Once the GitHub Release is published, the CI workflow will automatically:
 
 1. **Verify Version**: Check that the version in `__init__.py` matches the release tag
 2. **Build Package**: Create wheel and source distribution using `uv build`
