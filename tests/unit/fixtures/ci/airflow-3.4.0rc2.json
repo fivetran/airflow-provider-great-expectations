@@ -1,0 +1,15 @@
+{
+  "info": {
+    "name": "apache-airflow",
+    "version": "3.4.0rc2",
+    "requires_dist": [
+      "apache-airflow-core==3.4.0rc2",
+      "apache-airflow-task-sdk==1.4.0rc2",
+      "apache-airflow-core[all]; extra == \"all\"",
+      "apache-airflow-providers-standard>=0.0.1rc1; extra == \"all\"",
+      "uv>=0.13.5; extra == \"all\"",
+      "apache-airflow-task-sdk[all]; extra == \"all-task-sdk\"",
+      "apache-airflow-providers-standard>=0.0.1rc1; extra == \"standard\""
+    ]
+  }
+}
