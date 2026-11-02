@@ -26,6 +26,12 @@ tier = "3.1+"
 python = ["3.11", "3.12", "3.13"]
 
 [[airflow]]
+line = "3.2"
+release = "3.2.2"
+tier = "3.1+"
+python = ["3.11", "3.12", "3.13", "3.14"]
+
+[[airflow]]
 line = "3.3"
 release = "3.3.2"
 tier = "3.1+"
