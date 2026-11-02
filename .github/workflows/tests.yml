@@ -7,14 +7,24 @@ name: Tests
 # No job needs repository credentials or an approval step, and every job holds a
 # read-only token, so the workflow runs unchanged for pull requests from forks. Each
 # job that should block a merge is listed in the `needs` of `tests-passed`, the one
-# check to require.
+# check to require. The one write permission, on `report`, is granted only to a
+# scheduled run, so it never reaches a pull request.
+#
+# The workflow also runs weekly on the default branch, whether or not a commit has
+# landed, and on demand. A failed scheduled run opens or updates a tracking issue.
 
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+  schedule:
+    - cron: "43 6 * * 1"
+  workflow_dispatch:
 
+# A pull request has its own group, and a push, a scheduled run or a manual run groups by
+# ref. A run is cancelled only by a newer run of the same pull request, so scheduled and
+# manual runs never cancel, and are never cancelled by, a pull request's runs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -333,6 +343,93 @@ jobs:
         if: ${{ failure() }}
         run: docker compose -f docker/spark/docker-compose.yml logs --no-color
 
+  # The canaries run on every pull request and every scheduled run, and both block the
+  # gate. The latest canary installs the newest release of every dependency, with no
+  # constraints file, on the highest Python in the matrix. The lowest-direct canary
+  # resolves the provider's direct dependencies to the lowest versions that
+  # `pyproject.toml` admits, once at the declared Airflow floor and once at the oldest
+  # Airflow line that supports the highest Python, each under its release's constraints.
+  canary-latest:
+    name: canary-latest (Python ${{ fromJSON(needs.matrix.outputs.canary-latest).python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CANARY_PYTHON: ${{ fromJSON(needs.matrix.outputs.canary-latest).python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.CANARY_PYTHON }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the newest release of every dependency
+        id: install
+        run: >-
+          python .github/scripts/lane_install.py --mode latest
+          --python "$CANARY_PYTHON" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+      # A failed unit test must not hide the smoke-test result, so this step runs
+      # whenever the canary installed, unless the run was cancelled.
+      - name: Smoke-test the example DAGs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .github/scripts/run_example_dags.sh
+
+  canary-lowest-direct:
+    name: canary-lowest-direct (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.canary-lowest-direct) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      # Each entry carries a constraints URL or a template, never both, and the installer
+      # treats the empty one as absent. A release with no constraints file for the
+      # lane's Python fails here, naming the missing file, and never falls back.
+      - name: Install the lane at the lowest direct versions
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          LANE_CONSTRAINTS_TEMPLATE: ${{ matrix.lane.constraints_template }}
+        run: >-
+          python .github/scripts/lane_install.py --mode lowest-direct
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL"
+          --constraints-template "$LANE_CONSTRAINTS_TEMPLATE" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
   tests-passed:
     name: tests-passed
     # Runs even when a needed job failed, was cancelled or was skipped, and then
@@ -347,6 +444,8 @@ jobs:
       - postgres
       - spark
       - spark-connect
+      - canary-latest
+      - canary-lowest-direct
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -378,3 +477,17 @@ jobs:
             printf '%s\n' "$failed" >&2
             exit 1
           fi
+
+  # Opens or updates the tracking issue when a scheduled run fails. The gate fails
+  # whenever any job it needs did not succeed, so this one condition covers them all.
+  # `!cancelled()` keeps a run that someone cancelled from opening an issue.
+  report:
+    name: Report scheduled failure
+    needs: tests-passed
+    if: ${{ !cancelled() && needs.tests-passed.result == 'failure' && github.event_name == 'schedule' }}
+    uses: ./.github/workflows/report-scheduled-failure.yml # zizmor: ignore[self-repository] actionlint does not yet parse the $/ form; ./ resolves the called workflow from the caller's commit.
+    permissions:
+      issues: write # the called workflow opens or comments on the tracking issue, and does nothing else
+    with:
+      workflow: ${{ github.workflow }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
