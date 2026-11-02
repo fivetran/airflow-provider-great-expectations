@@ -21,6 +21,10 @@ RECORDED_CONSTRAINTS = (
     Path(__file__).parent / "fixtures/ci/airflow-2.11.2-constraints-3.11.txt"
 )
 RECORDED_PYPI_RC2 = Path(__file__).parent / "fixtures/ci/airflow-3.4.0rc2.json"
+# A frozen copy of the package metadata. The exemption-set tests read it, not the
+# repository's own pyproject.toml, so changing a tool pin there does not change what
+# they expect from the recorded constraints.
+FROZEN_PYPROJECT = Path(__file__).parent / "fixtures/ci/sample-pyproject.toml"
 # What the recorded 3.4.0rc2 metadata pins exactly, as pre-releases.
 RC2_PINS = ("apache-airflow-core==3.4.0rc2", "apache-airflow-task-sdk==1.4.0rc2")
 
@@ -102,7 +106,7 @@ def http_error(url: str, code: int) -> urllib.error.HTTPError:
 
 
 def test_exempt_set_comes_from_the_pinned_test_and_lint_requirements(lane_install):
-    assert lane_install.exempt_names(ROOT / "pyproject.toml") == frozenset(
+    assert lane_install.exempt_names(FROZEN_PYPROJECT) == frozenset(
         {"pytest", "pytest-mock", "mypy", "ruff"}
     )
 
@@ -175,7 +179,7 @@ def test_filtering_recorded_constraints_removes_exactly_the_four_tool_pins(
     lane_install,
 ):
     text = RECORDED_CONSTRAINTS.read_text(encoding="utf-8")
-    exempt = lane_install.exempt_names(ROOT / "pyproject.toml")
+    exempt = lane_install.exempt_names(FROZEN_PYPROJECT)
 
     filtered, removed = lane_install.filter_constraints(text, exempt)
 

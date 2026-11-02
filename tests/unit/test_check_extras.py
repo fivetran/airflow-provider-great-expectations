@@ -20,6 +20,11 @@ RECORDED_CONSTRAINTS = FIXTURES / "airflow-2.11.2-constraints-3.11.txt"
 # The whole-run tests read this frozen matrix, not the checked-in one, so that a
 # routine matrix update does not change the lanes and counts they assert.
 FROZEN_MATRIX = FIXTURES / "support-matrix.toml"
+# The tests that build a fake repository, and the one that lists the provider's extras,
+# read this frozen copy of the package metadata. It declares the same extras as the
+# frozen matrix, so adding or removing an extra in the real `pyproject.toml` does not
+# change what they expect.
+FROZEN_PYPROJECT = FIXTURES / "sample-pyproject.toml"
 
 # Today's provider extras, other than the test and lint extras.
 EXTRAS = (
@@ -262,7 +267,7 @@ def test_a_failure_without_a_resolver_explanation_still_names_uvs_error(
 
 
 def test_the_test_and_lint_extras_are_not_checked(check_extras):
-    assert check_extras.provider_extras(ROOT / "pyproject.toml") == EXTRAS
+    assert check_extras.provider_extras(FROZEN_PYPROJECT) == EXTRAS
 
 
 def test_the_checked_in_matrix_maps_every_provider_extra(check_extras):
@@ -384,7 +389,7 @@ def make_repo(tmp_path):
         (root / ".github/support-matrix.toml").write_text(
             FROZEN_MATRIX.read_text("utf-8"), encoding="utf-8"
         )
-        pyproject = (ROOT / "pyproject.toml").read_text("utf-8")
+        pyproject = FROZEN_PYPROJECT.read_text("utf-8")
         marker = "\ntests = ["
         assert marker in pyproject
         (root / "pyproject.toml").write_text(
