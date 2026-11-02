@@ -484,6 +484,119 @@ class TestValidateDataFrameOperator:
                 configure_dataframe=configure_dataframe,
             )
 
+    def test_construction_does_not_call_configure_dataframe(self) -> None:
+        """Expect that constructing the operator, as DAG parsing does, loads no data."""
+
+        # arrange
+        configure_dataframe = Mock(return_value=pd.DataFrame({"col_A": ["a"]}))
+
+        # act
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_construction",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=Mock(),
+        )
+
+        # assert
+        configure_dataframe.assert_not_called()
+        assert validate_df.configure_dataframe is configure_dataframe
+        assert not hasattr(validate_df, "dataframe")
+
+    def test_execute_calls_configure_dataframe_once_and_validates_its_result(
+        self,
+    ) -> None:
+        """Expect that execute() loads the DataFrame exactly once and validates that DataFrame."""
+
+        # arrange
+        column_name = "col_A"
+        configure_dataframe = Mock(
+            return_value=pd.DataFrame({column_name: ["a", "b", "c", "d"]})
+        )
+        expect = ExpectColumnValuesToBeInSet(
+            column=column_name,
+            value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
+        )
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_execute_loads_data",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=lambda context: expect,
+        )
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        calls_after_construction = configure_dataframe.call_count
+        validate_df.execute(context=context)
+
+        # assert
+        assert calls_after_construction == 0
+        configure_dataframe.assert_called_once_with()
+        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
+        assert pushed_result["success"] is True
+        # the four rows returned by configure_dataframe are the rows validated
+        assert pushed_result["expectations"][0]["result"]["element_count"] == 4
+
+    def test_each_execute_calls_configure_dataframe_again(self) -> None:
+        """Expect that every run loads fresh data, so a retry sees the source as it is now."""
+
+        # arrange
+        column_name = "col_A"
+        configure_dataframe = Mock(
+            side_effect=[
+                pd.DataFrame({column_name: ["a", "b", "c"]}),
+                pd.DataFrame({column_name: ["x", "y", "z"]}),
+            ]
+        )
+
+        def configure_expectations(
+            context: AbstractDataContext,
+        ) -> ExpectColumnValuesToBeInSet:
+            # a new Expectation per run: GX does not accept one that a previous run has used
+            return ExpectColumnValuesToBeInSet(
+                column=column_name,
+                value_set=["a", "b", "c"],  # type: ignore[arg-type]
+            )
+
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_execute_reloads_data",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=configure_expectations,
+        )
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        validate_df.execute(context=context)
+        with pytest.raises(GXValidationFailed):
+            validate_df.execute(context=context)
+
+        # assert
+        assert configure_dataframe.call_count == 2
+
+    def test_configure_dataframe_error_is_raised_by_execute_not_construction(
+        self,
+    ) -> None:
+        """Expect that a failing data source fails the task, not the DAG import."""
+
+        # arrange
+        def configure_dataframe() -> pd.DataFrame:
+            raise ConnectionError("data source unavailable")
+
+        mock_ti = Mock()
+        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
+
+        # act
+        validate_df = GXValidateDataFrameOperator(
+            task_id="validate_df_source_unavailable",
+            configure_dataframe=configure_dataframe,
+            configure_expectations=Mock(),
+        )
+
+        # assert
+        with pytest.raises(ConnectionError, match="data source unavailable"):
+            validate_df.execute(context=context)
+        mock_ti.xcom_push.assert_not_called()
+
     @pytest.fixture
     def mock_gx_no_datasource(
         self,
