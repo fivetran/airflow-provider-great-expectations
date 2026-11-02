@@ -1,0 +1,216 @@
+name: Tests
+
+# Every Airflow release, Python version, resolver version and service image comes
+# from the `matrix` job's outputs, which `.github/support-matrix.toml` drives. Adding
+# a lane or a service version there changes what runs here with no edit to this file.
+#
+# No job needs repository credentials or an approval step, and every job holds a
+# read-only token, so the workflow runs unchanged for pull requests from forks. Each
+# job that should block a merge is listed in the `needs` of `tests-passed`, the one
+# check to require.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  matrix:
+    name: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      lanes: ${{ steps.emit.outputs.lanes }}
+      postgres: ${{ steps.emit.outputs.postgres }}
+      postgres-image: ${{ steps.emit.outputs.postgres-image }}
+      spark: ${{ steps.emit.outputs.spark }}
+      spark-image: ${{ steps.emit.outputs.spark-image }}
+      pyspark-version: ${{ steps.emit.outputs.pyspark-version }}
+      canary-latest: ${{ steps.emit.outputs.canary-latest }}
+      canary-lowest-direct: ${{ steps.emit.outputs.canary-lowest-direct }}
+      uv-version: ${{ steps.emit.outputs.uv-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Emit support matrix outputs
+        id: emit
+        run: python3 .github/scripts/support_matrix.py emit
+
+  consistency:
+    name: consistency
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Check the declared ranges and docs against the support matrix
+        run: >-
+          uv run --no-project --with-requirements .github/scripts/requirements.txt
+          python .github/scripts/support_matrix.py check
+
+  extras:
+    name: extras
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Check that every extra resolves to its drivers on every lane
+        run: python3 .github/scripts/check_extras.py
+
+  unit:
+    name: unit (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.lanes) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras tests
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+  integration:
+    name: integration (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.lanes) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        id: install
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras tests
+
+      - name: Smoke-test the example DAGs
+        run: .github/scripts/run_example_dags.sh
+
+      # A failed smoke test must not hide the integration results, so this step runs
+      # whenever the lane installed, unless the run was cancelled.
+      - name: Run the integration tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pytest -m integration tests -ra
+
+  tests-passed:
+    name: tests-passed
+    # Runs even when a needed job failed, was cancelled or was skipped, and then
+    # fails. A failed `matrix` skips every other job, so the gate fails then too.
+    if: ${{ always() }}
+    needs:
+      - matrix
+      - consistency
+      - extras
+      - unit
+      - integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      NEEDS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require every needed job to succeed
+        shell: bash
+        run: |
+          set -euo pipefail
+          results="$(jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' <<< "$NEEDS")"
+          {
+            echo '### Required jobs'
+            echo
+            echo '| Job | Result |'
+            echo '| --- | --- |'
+            while IFS=$'\t' read -r job result; do
+              echo "| ${job} | ${result} |"
+            done <<< "$results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$results"
+          if [ -z "$results" ]; then
+            echo "error: no jobs to check" >&2
+            exit 1
+          fi
+          failed="$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' <<< "$NEEDS")"
+          if [ -n "$failed" ]; then
+            echo "error: these jobs did not succeed:" >&2
+            printf '%s\n' "$failed" >&2
+            exit 1
+          fi
