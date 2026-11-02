@@ -1,0 +1,23 @@
+great_expectations_provider/common/gx_context_actions.py
+  90933adbfac23ee6 13-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "e52babe15ceec31cd7cfba9436c7f43d676b155b",
+  "prompts": {
+    "90933adbfac23ee6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db404115-24a1-499d-86f2-9011165ed7ae",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 1,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
