@@ -28,9 +28,6 @@ jobs:
             python-version: "3.13"
 
     env:
-      GX_CLOUD_ORGANIZATION_ID: ${{ vars.GX_CLOUD_ORGANIZATION_ID }}
-      GX_CLOUD_WORKSPACE_ID: ${{ vars.GX_CLOUD_WORKSPACE_ID }}
-      GX_CLOUD_ACCESS_TOKEN: ${{ secrets.GX_CLOUD_ACCESS_TOKEN }}
       AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/great_expectations_provider/example_dags
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
 
@@ -82,9 +79,6 @@ jobs:
       contents: read
 
     env:
-      GX_CLOUD_ORGANIZATION_ID: ${{ vars.GX_CLOUD_ORGANIZATION_ID }}
-      GX_CLOUD_WORKSPACE_ID: ${{ vars.GX_CLOUD_WORKSPACE_ID }}
-      GX_CLOUD_ACCESS_TOKEN: ${{ secrets.GX_CLOUD_ACCESS_TOKEN }}
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
@@ -139,10 +133,6 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      GX_CLOUD_ORGANIZATION_ID: ${{ vars.GX_CLOUD_ORGANIZATION_ID }}
-      GX_CLOUD_WORKSPACE_ID: ${{ vars.GX_CLOUD_WORKSPACE_ID }}
-      GX_CLOUD_ACCESS_TOKEN: ${{ secrets.GX_CLOUD_ACCESS_TOKEN }}
 
     steps:
       - name: Checkout
@@ -187,10 +177,6 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      GX_CLOUD_ORGANIZATION_ID: ${{ vars.GX_CLOUD_ORGANIZATION_ID }}
-      GX_CLOUD_WORKSPACE_ID: ${{ vars.GX_CLOUD_WORKSPACE_ID }}
-      GX_CLOUD_ACCESS_TOKEN: ${{ secrets.GX_CLOUD_ACCESS_TOKEN }}
 
     steps:
       - name: Checkout

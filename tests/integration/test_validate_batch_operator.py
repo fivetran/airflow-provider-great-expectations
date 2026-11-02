@@ -18,16 +18,8 @@ class TestValidateBatchOperator:
     COL_NAME = "my_column"
 
     @pytest.mark.integration
-    def test_with_cloud_context(
-        self,
-        ensure_data_source_cleanup: Callable[[str], None],
-        ensure_suite_cleanup: Callable[[str], None],
-        ensure_validation_definition_cleanup: Callable[[str], None],
-    ) -> None:
-        task_id = f"validate_batch_cloud_integration_test_{rand_name()}"
-        ensure_data_source_cleanup(task_id)
-        ensure_suite_cleanup(task_id)
-        ensure_validation_definition_cleanup(task_id)
+    def test_with_ephemeral_context(self) -> None:
+        task_id = f"validate_batch_ephemeral_integration_test_{rand_name()}"
         dataframe = pd.DataFrame({self.COL_NAME: ["a", "b", "c"]})
         batch_parameters = {"dataframe": dataframe}
 
@@ -46,16 +38,15 @@ class TestValidateBatchOperator:
                 value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
             )
 
-        validate_cloud_batch = GXValidateBatchOperator(
+        validate_batch = GXValidateBatchOperator(
             task_id=task_id,
             configure_batch_definition=configure_batch_definition,
             configure_expectations=configure_expectations,
             batch_parameters=batch_parameters,
-            context_type="cloud",
         )
 
         mock_ti = Mock()
-        validate_cloud_batch.execute(context={"ti": mock_ti})
+        validate_batch.execute(context={"ti": mock_ti})
 
         # Get the result from xcom_push call
         pushed_result = mock_ti.xcom_push.call_args[1]["value"]
@@ -108,15 +99,14 @@ class TestValidateBatchOperator:
                 )
             )
 
-        validate_cloud_batch = GXValidateBatchOperator(
+        validate_batch = GXValidateBatchOperator(
             task_id=task_id,
             configure_batch_definition=configure_batch_definition,
             configure_expectations=configure_expectations_suite,
-            context_type="ephemeral",
         )
 
         mock_ti = Mock()
-        validate_cloud_batch.execute(context={"ti": mock_ti})
+        validate_batch.execute(context={"ti": mock_ti})
 
         # Get the result from xcom_push call
         pushed_result = mock_ti.xcom_push.call_args[1]["value"]
@@ -160,7 +150,6 @@ class TestValidateBatchOperator:
             )
 
         validate_batch = GXValidateBatchOperator(
-            context_type="ephemeral",
             task_id=task_id,
             configure_batch_definition=configure_batch_definition,
             configure_expectations=configure_expectations,
@@ -203,7 +192,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=configure_batch_definition,
             configure_expectations=configure_expectations,
             batch_parameters=batch_parameters,
-            context_type="ephemeral",
         )
 
         mock_ti = Mock()
@@ -241,7 +229,6 @@ class TestValidateBatchOperator:
             configure_batch_definition=configure_batch_definition,
             configure_expectations=configure_expectations,
             batch_parameters=batch_parameters,
-            context_type="ephemeral",
         )
 
         mock_ti = Mock()

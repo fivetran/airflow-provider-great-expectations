@@ -1,5 +1,8 @@
 # Apache Airflow Provider for Great Expectations
 
+## Unreleased
+* [MAINTENANCE] Remove GX Cloud support (breaking). Removes the `great_expectations_provider.hooks.gx_cloud` module, the `gx_cloud` connection type, the `conn_id` parameter of all operators and the `context_type` parameter of `GXValidateBatchOperator` and `GXValidateDataFrameOperator`. `GXValidateCheckpointOperator` accepts `context_type` `"ephemeral"` or `"file"`. See the migration guide. by @joshua-stauffer in #244
+
 ## 1.0.0 (2026-01-26)
 * [FEATURE] Workspace ID + GXCloud connection by @joshua-stauffer in #222
 * [FEATURE] Refactor `expect` parameter to `configure_expectations` by @joshua-stauffer in #229

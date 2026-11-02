@@ -5,7 +5,6 @@ import random
 import string
 from typing import TYPE_CHECKING, Callable, Generator
 
-import great_expectations as gx
 import pytest
 from sqlalchemy import create_engine, text
 
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
 
     from _pytest.config import Config
     from _pytest.nodes import Item
-    from great_expectations.data_context import AbstractDataContext
 
 
 def pytest_collection_modifyitems(config: Config, items: list[Item]) -> None:
@@ -32,10 +30,6 @@ def rand_name() -> str:
     return "".join(random.choices(string.ascii_lowercase, k=10))
 
 
-def is_valid_gx_cloud_url(url: str) -> bool:
-    return url.startswith("https://app.greatexpectations.io/organizations/")
-
-
 @pytest.fixture
 def table_name() -> str:
     return "test_table"
@@ -48,78 +42,6 @@ def postgres_connection_string() -> str:
     pg_port = os.environ["POSTGRES_PORT"]
     pg_db = os.environ["POSTGRES_DB"]
     return f"postgresql+psycopg2://{pg_user}:{pg_pw}@localhost:{pg_port}/{pg_db}"
-
-
-@pytest.fixture
-def cloud_context() -> AbstractDataContext:
-    return gx.get_context(mode="cloud")
-
-
-@pytest.fixture
-def ensure_checkpoint_cleanup(
-    ensure_validation_definition_cleanup,
-    cloud_context: AbstractDataContext,
-) -> Generator[Callable[[str], None], None, None]:
-    to_cleanup: set[str] = set()
-
-    def ensure_cleanup(name: str) -> None:
-        to_cleanup.add(name)
-
-    yield ensure_cleanup
-
-    for name in to_cleanup:
-        cloud_context.checkpoints.delete(name)
-
-
-@pytest.fixture
-def ensure_validation_definition_cleanup(
-    ensure_suite_cleanup,
-    ensure_data_source_cleanup,
-    cloud_context: AbstractDataContext,
-) -> Generator[Callable[[str], None], None, None]:
-    to_cleanup: set[str] = set()
-
-    def ensure_cleanup(name: str) -> None:
-        to_cleanup.add(name)
-
-    yield ensure_cleanup
-
-    for name in to_cleanup:
-        cloud_context.validation_definitions.delete(name)
-
-
-@pytest.fixture
-def ensure_suite_cleanup(
-    cloud_context: AbstractDataContext,
-) -> Generator[Callable[[str], None], None, None]:
-    to_cleanup: set[str] = set()
-
-    def ensure_cleanup(name: str) -> None:
-        to_cleanup.add(name)
-
-    yield ensure_cleanup
-
-    for name in to_cleanup:
-        cloud_context.suites.delete(name)
-
-
-@pytest.fixture
-def ensure_data_source_cleanup(
-    cloud_context: AbstractDataContext,
-) -> Generator[Callable[[str], None], None, None]:
-    to_cleanup: set[str] = set()
-
-    def ensure_cleanup(name: str) -> None:
-        to_cleanup.add(name)
-
-    yield ensure_cleanup
-
-    for name in to_cleanup:
-        try:
-            cloud_context.data_sources.delete(name)
-        except KeyError:
-            # TODO: remove Try/Except block after CORE-767 is resolved in GX Core
-            pass
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@ from great_expectations_provider.common.errors import GXValidationFailed
 from great_expectations_provider.operators.validate_checkpoint import (
     GXValidateCheckpointOperator,
 )
-from tests.integration.conftest import is_valid_gx_cloud_url, rand_name
+from tests.integration.conftest import rand_name
 
 
 class TestValidateCheckpointOperator:
@@ -67,65 +67,6 @@ class TestValidateCheckpointOperator:
 
         return _configure_checkpoint
 
-    @pytest.fixture
-    def configure_checkpoint_with_cleanup(
-        self,
-        configure_checkpoint: Callable[[AbstractDataContext], gx.Checkpoint],
-        ensure_checkpoint_cleanup: Callable[[str], None],
-        ensure_validation_definition_cleanup: Callable[[str], None],
-        ensure_suite_cleanup: Callable[[str], None],
-        ensure_data_source_cleanup: Callable[[str], None],
-    ) -> Callable[[AbstractDataContext], gx.Checkpoint]:
-        """Configure an arbitrary checkpoint to a given cloud context.
-
-        The models will be cleaned up when the test ends
-        This will pass for the data_frame fixture.
-        """
-
-        def _configure_checkpoint(context: AbstractDataContext) -> gx.Checkpoint:
-            # get the checkpoint
-            checkpoint = configure_checkpoint(context)
-
-            # ensure cleanup after the test ends
-            ensure_checkpoint_cleanup(checkpoint.name)
-            for vd in checkpoint.validation_definitions:
-                ensure_validation_definition_cleanup(vd.name)
-                ensure_suite_cleanup(vd.suite.name)
-                ensure_data_source_cleanup(vd.data.data_asset.datasource.name)
-
-            # return the checkpoint for use in test
-            return checkpoint
-
-        return _configure_checkpoint
-
-    @pytest.mark.integration
-    def test_with_cloud_context(
-        self,
-        configure_checkpoint_with_cleanup: Callable[
-            [AbstractDataContext], gx.Checkpoint
-        ],
-        data_frame: pd.DataFrame,
-    ) -> None:
-        """Ensure GXValidateCheckpointOperator works with cloud contexts."""
-
-        validate_cloud_checkpoint = GXValidateCheckpointOperator(
-            context_type="cloud",
-            task_id="cloud_context",
-            configure_checkpoint=configure_checkpoint_with_cleanup,
-            batch_parameters={"dataframe": data_frame},
-        )
-
-        mock_ti = Mock()
-        validate_cloud_checkpoint.execute(context={"ti": mock_ti})
-
-        # Get the result from xcom_push call
-        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
-        assert pushed_result["success"] is True
-        # make sure we have something that looks like a valid result url
-        assert is_valid_gx_cloud_url(
-            pushed_result["validation_results"][0]["result_url"]
-        )
-
     @pytest.mark.integration
     def test_with_file_context(
         self,
@@ -138,7 +79,7 @@ class TestValidateCheckpointOperator:
         def configure_context() -> FileDataContext:
             return gx.get_context(mode="file", project_root_dir=tmp_path)
 
-        validate_cloud_checkpoint = GXValidateCheckpointOperator(
+        validate_checkpoint = GXValidateCheckpointOperator(
             configure_file_data_context=configure_context,
             task_id="file_context",
             configure_checkpoint=configure_checkpoint,
@@ -146,7 +87,7 @@ class TestValidateCheckpointOperator:
         )
 
         mock_ti = Mock()
-        validate_cloud_checkpoint.execute(context={"ti": mock_ti})
+        validate_checkpoint.execute(context={"ti": mock_ti})
 
         # Get the result from xcom_push call
         pushed_result = mock_ti.xcom_push.call_args[1]["value"]
@@ -160,7 +101,7 @@ class TestValidateCheckpointOperator:
     ) -> None:
         """Ensure GXValidateCheckpointOperator works with ephemeral contexts."""
 
-        validate_cloud_checkpoint = GXValidateCheckpointOperator(
+        validate_checkpoint = GXValidateCheckpointOperator(
             context_type="ephemeral",
             task_id="ephemeral_context",
             configure_checkpoint=configure_checkpoint,
@@ -168,7 +109,7 @@ class TestValidateCheckpointOperator:
         )
 
         mock_ti = Mock()
-        validate_cloud_checkpoint.execute(context={"ti": mock_ti})
+        validate_checkpoint.execute(context={"ti": mock_ti})
 
         # Get the result from xcom_push call
         pushed_result = mock_ti.xcom_push.call_args[1]["value"]
