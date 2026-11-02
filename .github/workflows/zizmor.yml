@@ -1,4 +1,17 @@
-name: GitHub Actions Security Analysis with zizmor 🌈
+name: zizmor
+
+# Scans every workflow with zizmor at its default settings and fails the job on any
+# finding. The job's name is the name of the check to require, so keep it `zizmor`.
+#
+# Results are not uploaded to code scanning (`advanced-security: false`), because an upload
+# needs a write permission and a pull request from a fork has none. The job holds a
+# read-only token, so it runs unchanged for forks and a finding fails the check itself. The
+# findings are in the job's log.
+#
+# The action pins the zizmor release by hash in its own tree, so pinning the action by SHA
+# pins zizmor too, and a pin update moves both.
+#
+# An inline suppression comment is allowed only with its reason on the same line.
 
 on:
   push:
@@ -6,19 +19,27 @@ on:
   pull_request:
     branches: ["**"]
 
+# A pull request has its own group, and a push groups by ref. A run is cancelled only by a
+# newer run of the same pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions: {}
 
 jobs:
   zizmor:
-    name: Run zizmor 🌈
-    runs-on: ubuntu-latest
+    name: zizmor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
-      security-events: write
+      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Run zizmor 🌈
-        uses: zizmorcore/zizmor-action@f52a838cfabf134edcbaa7c8b3677dde20045018 # v0.1.1
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+        with:
+          advanced-security: false
