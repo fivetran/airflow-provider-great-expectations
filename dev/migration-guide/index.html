@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -515,6 +515,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade-from-1x-to-20-gx-cloud-removal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade from 1.x to 2.0: GX Cloud removal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade from 1.x to 2.0: GX Cloud removal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-to-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors-you-will-see-if-you-do-not-migrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors you will see if you do not migrate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keeping-validation-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping validation results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -763,6 +813,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade-from-1x-to-20-gx-cloud-removal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade from 1.x to 2.0: GX Cloud removal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade from 1.x to 2.0: GX Cloud removal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-to-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors-you-will-see-if-you-do-not-migrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors you will see if you do not migrate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keeping-validation-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping validation results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -797,7 +897,7 @@
 
 
 <h1 id="migration-guide">Migration guide</h1>
-<p>This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider.</p>
+<p>This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, <code>conn_id</code>, or <code>context_type</code>, see <a href="#upgrade-from-1x-to-20-gx-cloud-removal">Upgrade from 1.x to 2.0: GX Cloud removal</a>.</p>
 <p>Here is an overview of key differences between versions:</p>
 <table>
 <thead>
@@ -821,7 +921,7 @@
 <tr>
 <td>Data Contexts</td>
 <td>File</td>
-<td>Ephemeral<br>Cloud<br>File (<code>GXValidateCheckpointOperator</code> only)</td>
+<td>Ephemeral<br>File (<code>GXValidateCheckpointOperator</code> only)</td>
 </tr>
 <tr>
 <td>Response handling</td>
@@ -830,7 +930,7 @@
 </tr>
 </tbody>
 </table>
-<p>For guidance on which Operator and Data Context best fit your needs, see <a href="../getting-started/#operator-use-cases">Operator use cases</a>. Note that while File Data Contexts are still supported with <code>GXValidateCheckpointOperator</code>, they require extra configuration and can be challenging to use when Airflow is running in a distributed environment. Most uses of the legacy <code>GreatExpectationsOperator</code> can now be satisfied with an Ephemeral or Cloud Data Context with either the <code>GXValidateDataFrameOperator</code> or the <code>GXValidateBatchOperator</code> to minimize configuration.</p>
+<p>For guidance on which Operator and Data Context best fit your needs, see <a href="../getting-started/#operator-use-cases">Operator use cases</a>. Note that while File Data Contexts are still supported with <code>GXValidateCheckpointOperator</code>, they require extra configuration and can be challenging to use when Airflow is running in a distributed environment. Most uses of the legacy <code>GreatExpectationsOperator</code> can now be satisfied with an Ephemeral Data Context with either the <code>GXValidateDataFrameOperator</code> or the <code>GXValidateBatchOperator</code> to minimize configuration.</p>
 <h2 id="switch-to-the-new-data-frame-or-batch-operator-recommended">Switch to the new Data Frame or Batch Operator (recommended)</h2>
 <p>The configuration options for the new <code>GXValidateDataFrameOperator</code> and <code>GXValidateBatchOperator</code> are streamlined compared to the old <code>GreatExpectationsOperator</code>. Switching to one of these doesn’t involve translating existing configuration into new syntax line for line but rather paring back to a more minimal configuration.</p>
 <ul>
@@ -859,8 +959,8 @@
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>     <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_context</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>     <span class="k">return</span> <span class="n">get_context</span><span class="p">(</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">,</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">project_root_dir</span><span class="o">=</span><span class="s2">&quot;./path_to_your_existing_project&quot;</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">mode</span><span class="o">=</span><span class="s2">"file"</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">project_root_dir</span><span class="o">=</span><span class="s2">"./path_to_your_existing_project"</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>     <span class="p">)</span>
 </span></code></pre></div>
 <p>Here's a more advanced example for running Airflow in an environment where the underlying file system is not stable. The steps here are as follows:
@@ -881,8 +981,8 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>     <span class="c1"># load your GX project from its remote source</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>     <span class="k">yield</span> <span class="n">get_context</span><span class="p">(</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">project_root_dir</span><span class="o">=</span><span class="s2">&quot;./path_to_the_local_copy_of_your_existing_project&quot;</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">mode</span><span class="o">=</span><span class="s2">"file"</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">project_root_dir</span><span class="o">=</span><span class="s2">"./path_to_the_local_copy_of_your_existing_project"</span>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>     <span class="p">)</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>     <span class="c1"># write your GX project back to its remote source</span>
 </span></code></pre></div>
@@ -898,7 +998,7 @@
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a> <span class="k">def</span><span class="w"> </span><span class="nf">configure_checkpoint</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Checkpoint</span><span class="p">:</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">checkpoints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;&lt;YOUR CHECKPOINT NAME&gt;&quot;</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">checkpoints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"&lt;YOUR CHECKPOINT NAME&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li>See <a href="../getting-started/">getting started</a> for more information about required and optional configuration.</li>
@@ -927,10 +1027,10 @@ and can be used when configuring your Great Expectations data source within the 
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
 </span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_batch_definition</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchDefinition</span><span class="p">:</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="n">snowflake_config</span> <span class="o">=</span> <span class="n">build_snowflake_key_connection</span><span class="p">(</span><span class="n">conn_id</span><span class="o">=</span><span class="s2">&quot;snowflake_conn_id&quot;</span><span class="p">)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="n">snowflake_config</span> <span class="o">=</span> <span class="n">build_snowflake_key_connection</span><span class="p">(</span><span class="n">conn_id</span><span class="o">=</span><span class="s2">"snowflake_conn_id"</span><span class="p">)</span>
 </span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="k">return</span> <span class="p">(</span>
 </span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>        <span class="n">context</span><span class="o">.</span><span class="n">data_sources</span><span class="o">.</span><span class="n">add_snowflake</span><span class="p">(</span>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;snowflake example&quot;</span><span class="p">,</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"snowflake example"</span><span class="p">,</span>
 </span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>            <span class="n">account</span><span class="o">=</span><span class="n">snowflake_config</span><span class="o">.</span><span class="n">account</span><span class="p">,</span>
 </span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>            <span class="n">user</span><span class="o">=</span><span class="n">snowflake_config</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
 </span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>            <span class="n">role</span><span class="o">=</span><span class="n">snowflake_config</span><span class="o">.</span><span class="n">role</span><span class="p">,</span>
@@ -939,9 +1039,9 @@ and can be used when configuring your Great Expectations data source within the 
 </span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>            <span class="n">database</span><span class="o">=</span><span class="n">snowflake_config</span><span class="o">.</span><span class="n">database</span><span class="p">,</span>
 </span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>            <span class="n">schema</span><span class="o">=</span><span class="n">snowflake_config</span><span class="o">.</span><span class="n">schema_name</span><span class="p">,</span>
 </span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>        <span class="p">)</span>
-</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>        <span class="o">.</span><span class="n">add_table_asset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;&lt;SCHEMA.TABLE&gt;&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;&lt;TABLE_NAME&gt;&quot;</span><span class="p">)</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>        <span class="o">.</span><span class="n">add_table_asset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"&lt;SCHEMA.TABLE&gt;"</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"&lt;TABLE_NAME&gt;"</span><span class="p">)</span>
 </span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="o">.</span><span class="n">add_batch_definition_whole_table</span><span class="p">(</span>  <span class="c1"># you can also batch by year, month, or day here</span>
-</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Whole Table Batch Definition&quot;</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Whole Table Batch Definition"</span>
 </span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>        <span class="p">)</span>
 </span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>    <span class="p">)</span>
 </span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
@@ -950,7 +1050,7 @@ and can be used when configuring your Great Expectations data source within the 
 </span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpectationSuite</span>
 </span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">suites</span><span class="o">.</span><span class="n">add_or_update</span><span class="p">(</span>
 </span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>        <span class="n">ExpectationSuite</span><span class="p">(</span>
-</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&lt;SUITE_NAME&gt;&quot;</span><span class="p">,</span>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"&lt;SUITE_NAME&gt;"</span><span class="p">,</span>
 </span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>            <span class="n">expectations</span><span class="o">=</span><span class="p">[</span>
 </span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>                <span class="c1"># define expectations</span>
 </span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>            <span class="p">],</span>
@@ -959,12 +1059,60 @@ and can be used when configuring your Great Expectations data source within the 
 </span><span id="__span-3-46"><a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>
 </span><span id="__span-3-47"><a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>
 </span><span id="__span-3-48"><a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a><span class="n">my_batch_operator</span> <span class="o">=</span> <span class="n">GXValidateBatchOperator</span><span class="p">(</span>
-</span><span id="__span-3-49"><a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;my_batch_operator&quot;</span><span class="p">,</span>
+</span><span id="__span-3-49"><a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_batch_operator"</span><span class="p">,</span>
 </span><span id="__span-3-50"><a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a>    <span class="n">configure_batch_definition</span><span class="o">=</span><span class="n">configure_batch_definition</span><span class="p">,</span>
 </span><span id="__span-3-51"><a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a>    <span class="n">configure_expectations</span><span class="o">=</span><span class="n">configure_expectations</span><span class="p">,</span>
-</span><span id="__span-3-52"><a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>    <span class="n">context_type</span><span class="o">=</span><span class="s2">&quot;ephemeral&quot;</span><span class="p">,</span>
-</span><span id="__span-3-53"><a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a><span class="p">)</span>
+</span><span id="__span-3-52"><a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a><span class="p">)</span>
 </span></code></pre></div>
+<h2 id="upgrade-from-1x-to-20-gx-cloud-removal">Upgrade from 1.x to 2.0: GX Cloud removal</h2>
+<p>GX Cloud stopped being publicly available on 2026-06-01, and Great Expectations (GX) 1.18 and later raise an error for Cloud Data Contexts. Provider 2.0 removes the <code>great_expectations_provider.hooks.gx_cloud</code> module and its <code>GXCloudHook</code>, <code>GXCloudConfig</code>, and <code>IncompleteGXCloudConfigError</code> classes, as well as the <code>gx_cloud</code> connection type. It also removes the <code>conn_id</code> parameter from all three operators and the <code>context_type</code> parameter from <code>GXValidateBatchOperator</code> and <code>GXValidateDataFrameOperator</code>; those operators always use an Ephemeral Data Context. <code>GXValidateCheckpointOperator</code> no longer accepts the <code>"cloud"</code> value for <code>context_type</code>.</p>
+<h3 id="what-to-change">What to change</h3>
+<table>
+<thead>
+<tr>
+<th>1.x usage</th>
+<th>2.0 action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conn_id=</code> on any operator</td>
+<td>Delete the argument.</td>
+</tr>
+<tr>
+<td><code>context_type=</code> on <code>GXValidateBatchOperator</code> or <code>GXValidateDataFrameOperator</code></td>
+<td>Delete the argument.</td>
+</tr>
+<tr>
+<td><code>context_type="cloud"</code> on <code>GXValidateCheckpointOperator</code></td>
+<td>Use <code>"ephemeral"</code> (the default), or use <code>"file"</code> with <code>configure_file_data_context</code>.</td>
+</tr>
+<tr>
+<td><code>conn_id</code> or <code>context_type</code> in <code>default_args</code></td>
+<td>Delete those keys. Airflow silently ignores <code>default_args</code> keys an operator does not accept; <code>GXValidateCheckpointOperator</code> validates <code>context_type</code>.</td>
+</tr>
+<tr>
+<td><code>gx_cloud</code> Airflow connections</td>
+<td>Delete the connections.</td>
+</tr>
+<tr>
+<td><code>GX_CLOUD_*</code> variables in the Airflow environment</td>
+<td>Remove the variables. The operators ignore them, but your own callables that call <code>gx.get_context()</code> without a <code>mode</code> raise while they are set.</td>
+</tr>
+<tr>
+<td>Imports from <code>great_expectations_provider.hooks.gx_cloud</code></td>
+<td>Delete the imports.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="errors-you-will-see-if-you-do-not-migrate">Errors you will see if you do not migrate</h3>
+<p>At DAG parse, Airflow reports <code>TypeError</code> on Airflow 3 or <code>AirflowException</code> on Airflow 2 for invalid operator arguments. The message begins <code>Invalid arguments were passed to &lt;Operator&gt;</code> and includes the invalid values under <code>**kwargs</code>: <code>{…}</code>. This applies to <code>conn_id</code> on any operator and <code>context_type</code> on the batch or DataFrame operator.</p>
+<p>For an unsupported checkpoint <code>context_type</code>, construction raises <code>ValueError</code> with this message (where the received value is shown):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Parameter `context_type` must be 'ephemeral' or 'file', got 'cloud'
+</span></code></pre></div>
+<p>Importing the removed hook module raises <code>ModuleNotFoundError</code>.</p>
+<h3 id="keeping-validation-results">Keeping validation results</h3>
+<p>To keep persistent results and view them in Data Docs, use a File Data Context with <code>GXValidateCheckpointOperator</code>; see the <a href="../getting-started/#checkpoint-operator">File Data Context setup step</a>. You can also read the operator's XCom <code>return_value</code> in a downstream task. Results no longer include a GX Cloud link.</p>
 
 
 
@@ -1064,10 +1212,10 @@ and can be used when configuring your Great Expectations data source within the 
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.sections", "navigation.tabs", "navigation.footer", "navigation.indexes", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.sections", "navigation.tabs", "navigation.footer", "navigation.indexes", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -1048,16 +1048,15 @@
 <li><code>GXValidateCheckpointOperator</code></li>
 </ul>
 <h2 id="operator-use-cases">Operator use cases</h2>
-<p>When deciding which Operator best fits your use case, consider the location of the data you are validating, whether or not you need external alerts or actions to be triggered by the Operator, and what Data Context you will use. When picking a Data Context, consider whether or not you need to view how results change over time.</p>
+<p>When deciding which Operator best fits your use case, consider the location of the data you are validating and whether you need external alerts or actions to be triggered by the Operator.</p>
 <ul>
 <li>If your data is in memory as a Spark or Pandas DataFrame, we recommend using the <code>GXValidateDataFrameOperator</code>. This option requires only a DataFrame and your Expectations to create a validation result.</li>
 <li>If your data is not in memory, we recommend configuring GX to connect to it by defining a BatchDefinition with the <code>GXValidateBatchOperator</code>. This option requires a BatchDefinition and your Expectations to create a validation result.</li>
 <li>If you want to <a href="https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/create_a_checkpoint_with_actions">trigger actions</a> based on validation results, use the <code>GXValidateCheckpointOperator</code>. This option supports all features of GX Core, so it requires the most configuration - you have to define a  Checkpoint, BatchDefinition, ExpectationSuite, and ValidationDefinition to get validation results.</li>
 </ul>
-<p>The Operators vary in which <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context">Data Contexts</a> they support. All 3 Operators support Ephemeral and GX Cloud Data Contexts. Only the <code>GXValidateCheckpointOperator</code> supports the File Data Context.</p>
+<p>The <code>GXValidateDataFrameOperator</code> and <code>GXValidateBatchOperator</code> use an Ephemeral Data Context. The <code>GXValidateCheckpointOperator</code> supports Ephemeral and File Data Contexts.</p>
 <ul>
-<li>If the results are used only within the Airflow DAG by other tasks, we recommend using an Ephemeral Data Context. The serialized Validation Result will be available within the DAG as the task result, but will not persist externally for viewing the results across multiple runs. All 3 Operators support the Ephemeral Data Context.</li>
-<li>To persist and view results outside of Airflow, we recommend using a Cloud Data Context. Validation Results are automatically visible in the GX Cloud UI when using a Cloud Data Context, and the task result contains a link to the stored validation result. All 3 Operators support the Cloud Data Context.</li>
+<li>The DataFrame and Batch operators use an Ephemeral Data Context. The serialized Validation Result is available within the DAG as the task result, but does not persist externally for viewing results across multiple runs.</li>
 <li>If you want to manage Validation Results yourself, use a File Data Context. With this option, Validation Results can be viewed in <a href="https://docs.greatexpectations.io/docs/core/configure_project_settings/configure_data_docs/">Data Docs</a>. Only the <code>GXValidateCheckpointOperator</code> supports the File Data Context.</li>
 </ul>
 <h2 id="prerequisites">Prerequisites</h2>
@@ -1081,7 +1080,7 @@
 <p><div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>airflow-provider-great-expectations
 </span></code></pre></div>
 2. (Optional) Install additional dependencies for the data sources you’ll use. For example, to install the optional Snowflake dependency, use the following command.</p>
-<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;airflow-provider-great-expectations[snowflake]&quot;</span>
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"airflow-provider-great-expectations[snowflake]"</span>
 </span></code></pre></div>
    The following backends are supported as optional dependencies:
     - <code>athena</code>
@@ -1121,44 +1120,32 @@
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_dataframe</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>  <span class="c1"># airflow best practice is to not import heavy dependencies in the top level</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/path/to/my/data&quot;</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/path/to/my/data"</span><span class="p">)</span>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
 </span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_expectations</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expectation</span> <span class="o">|</span> <span class="n">ExpectationSuite</span><span class="p">:</span>
 </span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpectationSuite</span>
 </span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">suites</span><span class="o">.</span><span class="n">add_or_update</span><span class="p">(</span>
 </span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="n">ExpectationSuite</span><span class="p">(</span>
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;example expectation suite&quot;</span><span class="p">,</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"example expectation suite"</span><span class="p">,</span>
 </span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>            <span class="n">expectations</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
 </span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>        <span class="p">)</span>
 </span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    <span class="p">)</span>
 </span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>
 </span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="n">my_data_frame_operator</span> <span class="o">=</span> <span class="n">GXValidateDataFrameOperator</span><span class="p">(</span>
-</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;my_data_frame_operator&quot;</span><span class="p">,</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_data_frame_operator"</span><span class="p">,</span>
 </span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>    <span class="n">configure_dataframe</span><span class="o">=</span><span class="n">configure_dataframe</span><span class="p">,</span>
 </span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>    <span class="n">configure_expectations</span><span class="o">=</span><span class="n">configure_expectations</span><span class="p">,</span>
 </span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><strong><code>task_id</code></strong>: alphanumeric name used in the Airflow UI and GX Cloud.</li>
+<li><strong><code>task_id</code></strong>: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.</li>
 <li><strong><code>configure_dataframe</code></strong>: function that returns a DataFrame to pass data to the Operator.</li>
 <li><strong><code>configure_expectations</code></strong>: function that returns either a <a href="https://docs.greatexpectations.io/docs/core/define_expectations/create_an_expectation">single Expectation</a> or an <a href="https://docs.greatexpectations.io/docs/core/define_expectations/organize_expectation_suites">Expectation Suite</a> to validate against your data.</li>
 <li><strong><code>result_format</code> (optional)</strong>: accepts <code>BOOLEAN_ONLY</code>, <code>BASIC</code>, <code>SUMMARY</code>, or <code>COMPLETE</code> to set the <a href="https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/choose_a_result_format/">verbosity of returned Validation Results</a>. Defaults to <code>SUMMARY</code>.</li>
-<li><strong><code>context_type</code> (optional)</strong>: accepts <code>ephemeral</code> or <code>cloud</code> to set the <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context">Data Context</a> used by the Operator. Defaults to <code>ephemeral</code>, which does not persist results between runs. To save and view Validation Results in GX Cloud, use <code>cloud</code> and complete the additional Cloud Data Context configuration below.</li>
 </ul>
 </li>
 </ol>
 <p>For more details, explore this <a href="https://github.com/great-expectations/airflow-provider-great-expectations/tree/docs/great_expectations_provider/example_dags/example_great_expectations_dag.py#L134-L138">end-to-end code sample</a>.</p>
-<ol>
-<li>
-<p>If you use a Cloud Data Context, create a <a href="https://app.greatexpectations.io/">free GX Cloud account</a> to get your <a href="https://docs.greatexpectations.io/docs/cloud/connect/connect_python#get-your-user-access-token-and-organization-id">Cloud credentials</a> and then set the following Airflow variables.</p>
-<ul>
-<li><code>GX_CLOUD_ACCESS_TOKEN</code></li>
-<li><code>GX_CLOUD_ORGANIZATION_ID</code></li>
-<li><code>GX_CLOUD_WORKSPACE_ID</code></li>
-</ul>
-</li>
-</ol>
-<p>The <code>GXValidateDataFrameOperator</code> creates an XCom that contains a link to view your results in the GX Cloud UI.</p>
 <h3 id="batch-operator">Batch Operator</h3>
 <ol>
 <li>
@@ -1187,60 +1174,45 @@
 </span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">great_expectations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpectationSuite</span>
 </span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">suites</span><span class="o">.</span><span class="n">add_or_update</span><span class="p">(</span>
 </span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="n">ExpectationSuite</span><span class="p">(</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;example expectation suite&quot;</span><span class="p">,</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"example expectation suite"</span><span class="p">,</span>
 </span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>            <span class="n">expectations</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
 </span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>        <span class="p">)</span>
 </span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="p">)</span>
 </span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>
 </span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_postgres_batch_definition</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchDefinition</span><span class="p">:</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This function takes a GX Context and returns a BatchDefinition that</span>
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="sd">    loads a batch of data from a PostgreSQL table.&quot;&quot;&quot;</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="sd">"""This function takes a GX Context and returns a BatchDefinition that</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="sd">    loads a batch of data from a PostgreSQL table."""</span>
 </span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>    <span class="k">return</span> <span class="p">(</span>
 </span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>        <span class="n">context</span><span class="o">.</span><span class="n">data_sources</span><span class="o">.</span><span class="n">add_postgres</span><span class="p">(</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;example data source&quot;</span><span class="p">,</span>
-</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>         <span class="n">connection_string</span><span class="o">=</span><span class="s2">&quot;$</span><span class="si">{POSTGRES_CONNECTION_STRING}</span><span class="s2">&quot;</span><span class="p">,</span>  <span class="c1"># load credentials from environment</span>
+</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>         <span class="n">name</span><span class="o">=</span><span class="s2">"example data source"</span><span class="p">,</span>
+</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>         <span class="n">connection_string</span><span class="o">=</span><span class="s2">"$</span><span class="si">{POSTGRES_CONNECTION_STRING}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># load credentials from environment</span>
 </span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>        <span class="p">)</span>
 </span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>        <span class="o">.</span><span class="n">add_table_asset</span><span class="p">(</span>
-</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;example table asset&quot;</span><span class="p">,</span>
-</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>         <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;my_table&quot;</span><span class="p">,</span>
+</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>         <span class="n">name</span><span class="o">=</span><span class="s2">"example table asset"</span><span class="p">,</span>
+</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>         <span class="n">table_name</span><span class="o">=</span><span class="s2">"my_table"</span><span class="p">,</span>
 </span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>        <span class="p">)</span>
 </span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a>        <span class="o">.</span><span class="n">add_batch_definition_whole_table</span><span class="p">(</span>
-</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;example batch definition&quot;</span>
+</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"example batch definition"</span>
 </span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a>        <span class="p">)</span>
 </span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a>    <span class="p">)</span>
 </span><span id="__span-5-39"><a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a>
 </span><span id="__span-5-40"><a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a>
 </span><span id="__span-5-41"><a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a><span class="n">my_batch_operator</span> <span class="o">=</span> <span class="n">GXValidateBatchOperator</span><span class="p">(</span>
-</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;my_postgres_batch_operator&quot;</span><span class="p">,</span>
+</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_postgres_batch_operator"</span><span class="p">,</span>
 </span><span id="__span-5-43"><a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>    <span class="n">configure_batch_definition</span><span class="o">=</span><span class="n">configure_postgres_batch_definition</span><span class="p">,</span>
 </span><span id="__span-5-44"><a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a>    <span class="n">configure_expectations</span><span class="o">=</span><span class="n">configure_expectations</span><span class="p">,</span>
 </span><span id="__span-5-45"><a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><strong><code>task_id</code></strong>: alphanumeric name used in the Airflow UI and GX Cloud.</li>
+<li><strong><code>task_id</code></strong>: Airflow task ID. Alphanumeric name used in the Airflow UI and to name the GX objects the Operator creates.</li>
 <li><strong><code>configure_batch_definition</code></strong>: function that returns a <a href="https://docs.greatexpectations.io/docs/core/connect_to_data/filesystem_data/#create-a-batch-definition">BatchDefinition</a> to configure GX to read your data.</li>
 <li><strong><code>configure_expectations</code></strong>: function that returns either a <a href="https://docs.greatexpectations.io/docs/core/define_expectations/create_an_expectation">single Expectation</a> or an <a href="https://docs.greatexpectations.io/docs/core/define_expectations/organize_expectation_suites">Expectation Suite</a> to validate against your data.</li>
 <li><strong><code>batch_parameters</code> (optional)</strong>: dictionary that specifies a <a href="https://docs.greatexpectations.io/docs/core/define_expectations/retrieve_a_batch_of_test_data">time-based Batch of data</a> to validate your Expectations against. Defaults to the first valid Batch found, which is the most recent Batch (with default sort ascending) or the oldest Batch if the Batch Definition has been configured to sort descending.</li>
 <li><strong><code>result_format</code> (optional)</strong>: accepts <code>BOOLEAN_ONLY</code>, <code>BASIC</code>, <code>SUMMARY</code>, or <code>COMPLETE</code> to set the <a href="https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/choose_a_result_format/">verbosity of returned Validation Results</a>. Defaults to <code>SUMMARY</code>.</li>
-<li><strong><code>context_type</code> (optional)</strong>: accepts <code>ephemeral</code> or <code>cloud</code> to set the <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context">Data Context</a> used by the Operator. Defaults to <code>ephemeral</code>, which does not persist results between runs. To save and view Validation Results in GX Cloud, use <code>cloud</code> and complete the additional Cloud Data Context configuration below.</li>
 </ul>
 </li>
 </ol>
 <p>For more details, explore this <a href="https://github.com/great-expectations/airflow-provider-great-expectations/tree/docs/great_expectations_provider/example_dags/example_dag_with_batch_parameters.py#L123-L127">end-to-end code sample</a>.</p>
-<ol>
-<li>
-<p>If you use a Cloud Data Context, create a <a href="https://app.greatexpectations.io/">free GX Cloud account</a> to get your <a href="https://docs.greatexpectations.io/docs/cloud/connect/connect_python#get-your-user-access-token-and-organization-id">Cloud credentials</a> and then set the following Airflow variables.</p>
-<ul>
-<li><code>GX_CLOUD_ACCESS_TOKEN</code></li>
-<li><code>GX_CLOUD_ORGANIZATION_ID</code></li>
-<li><code>GX_CLOUD_WORKSPACE_ID</code></li>
-</ul>
-<p>When using GX Cloud, you can define your configuration in code like the example above, or you can use the Cloud UI to create and edit your configuration.
-GX Cloud automatically creates a Batch Definition and Expectation Suite for you when you configure a Data Asset.
-You can find the names of these default resources by inspecting your GX configuration with the Python API.
-The <code>GXValidateBatchOperator</code> creates an XCom that contains a link to view your results in the GX Cloud UI.</p>
-</li>
-</ol>
 <h3 id="checkpoint-operator">Checkpoint Operator</h3>
 <ol>
 <li>
@@ -1266,9 +1238,9 @@ The <code>GXValidateBatchOperator</code> creates an XCom that contains a link to
 </span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
 </span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
 </span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_csv_checkpoint</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Checkpoint</span><span class="p">:</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This function takes a GX Context and returns a Checkpoint that</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="sd">"""This function takes a GX Context and returns a Checkpoint that</span>
 </span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="sd">    can load CSV files from the data directory, validate them</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="sd">    against an ExpectationSuite, and run Actions.&quot;&quot;&quot;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="sd">    against an ExpectationSuite, and run Actions."""</span>
 </span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="c1"># import GX objects locally per Airflow best practices</span>
 </span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>
 </span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">great_expectations.expectations</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gxe</span>
@@ -1277,25 +1249,25 @@ The <code>GXValidateBatchOperator</code> creates an XCom that contains a link to
 </span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>    <span class="c1"># Set up data source, asset, batch definition</span>
 </span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="n">batch_definition</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>        <span class="n">context</span><span class="o">.</span><span class="n">data_sources</span><span class="o">.</span><span class="n">add_pandas_filesystem</span><span class="p">(</span>
-</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Load Datasource&quot;</span><span class="p">,</span> <span class="n">base_directory</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/my/data&quot;</span><span class="p">)</span>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Load Datasource"</span><span class="p">,</span> <span class="n">base_directory</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">"/path/to/my/data"</span><span class="p">)</span>
 </span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>        <span class="p">)</span>
-</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>        <span class="o">.</span><span class="n">add_csv_asset</span><span class="p">(</span><span class="s2">&quot;Load Asset&quot;</span><span class="p">)</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>        <span class="o">.</span><span class="n">add_csv_asset</span><span class="p">(</span><span class="s2">"Load Asset"</span><span class="p">)</span>
 </span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>        <span class="o">.</span><span class="n">add_batch_definition_monthly</span><span class="p">(</span>
-</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Load Batch Definition&quot;</span><span class="p">,</span>
-</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>            <span class="n">regex</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;yellow_tripdata_sample_(?P&lt;year&gt;\d</span><span class="si">{4}</span><span class="s2">)-(?P&lt;month&gt;\d</span><span class="si">{2}</span><span class="s2">).csv&quot;</span><span class="p">,</span>
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Load Batch Definition"</span><span class="p">,</span>
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>            <span class="n">regex</span><span class="o">=</span><span class="sa">r</span><span class="s2">"yellow_tripdata_sample_(?P&lt;year&gt;\d</span><span class="si">{4}</span><span class="s2">)-(?P&lt;month&gt;\d</span><span class="si">{2}</span><span class="s2">).csv"</span><span class="p">,</span>
 </span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>        <span class="p">)</span>
 </span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="p">)</span>
 </span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>    <span class="c1"># Set up expectation suite</span>
 </span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>    <span class="n">expectation_suite</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">suites</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
 </span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>        <span class="n">ExpectationSuite</span><span class="p">(</span>
-</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Load ExpectationSuite&quot;</span><span class="p">,</span>
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Load ExpectationSuite"</span><span class="p">,</span>
 </span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>            <span class="n">expectations</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
 </span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>        <span class="p">)</span>
 </span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>    <span class="p">)</span>
 </span><span id="__span-7-41"><a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a>    <span class="c1"># Set up validation definition</span>
 </span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>    <span class="n">validation_definition</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">validation_definitions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
 </span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>        <span class="n">ValidationDefinition</span><span class="p">(</span>
-</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Load Validation Definition&quot;</span><span class="p">,</span>
+</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Load Validation Definition"</span><span class="p">,</span>
 </span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>            <span class="n">data</span><span class="o">=</span><span class="n">batch_definition</span><span class="p">,</span>
 </span><span id="__span-7-46"><a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a>            <span class="n">suite</span><span class="o">=</span><span class="n">expectation_suite</span><span class="p">,</span>
 </span><span id="__span-7-47"><a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a>        <span class="p">)</span>
@@ -1303,7 +1275,7 @@ The <code>GXValidateBatchOperator</code> creates an XCom that contains a link to
 </span><span id="__span-7-49"><a id="__codelineno-7-49" name="__codelineno-7-49" href="#__codelineno-7-49"></a>    <span class="c1"># Set up checkpoint</span>
 </span><span id="__span-7-50"><a id="__codelineno-7-50" name="__codelineno-7-50" href="#__codelineno-7-50"></a>    <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">checkpoints</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
 </span><span id="__span-7-51"><a id="__codelineno-7-51" name="__codelineno-7-51" href="#__codelineno-7-51"></a>        <span class="n">Checkpoint</span><span class="p">(</span>
-</span><span id="__span-7-52"><a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Load Checkpoint&quot;</span><span class="p">,</span>
+</span><span id="__span-7-52"><a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">"Load Checkpoint"</span><span class="p">,</span>
 </span><span id="__span-7-53"><a id="__codelineno-7-53" name="__codelineno-7-53" href="#__codelineno-7-53"></a>            <span class="n">validation_definitions</span><span class="o">=</span><span class="p">[</span><span class="n">validation_definition</span><span class="p">],</span>
 </span><span id="__span-7-54"><a id="__codelineno-7-54" name="__codelineno-7-54" href="#__codelineno-7-54"></a>            <span class="n">actions</span><span class="o">=</span><span class="p">[],</span>
 </span><span id="__span-7-55"><a id="__codelineno-7-55" name="__codelineno-7-55" href="#__codelineno-7-55"></a>        <span class="p">)</span>
@@ -1312,36 +1284,22 @@ The <code>GXValidateBatchOperator</code> creates an XCom that contains a link to
 </span><span id="__span-7-58"><a id="__codelineno-7-58" name="__codelineno-7-58" href="#__codelineno-7-58"></a>
 </span><span id="__span-7-59"><a id="__codelineno-7-59" name="__codelineno-7-59" href="#__codelineno-7-59"></a>
 </span><span id="__span-7-60"><a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a><span class="n">my_checkpoint_operator</span> <span class="o">=</span> <span class="n">GXValidateCheckpointOperator</span><span class="p">(</span>
-</span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;my_checkpoint_operator&quot;</span><span class="p">,</span>
+</span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>    <span class="n">task_id</span><span class="o">=</span><span class="s2">"my_checkpoint_operator"</span><span class="p">,</span>
 </span><span id="__span-7-62"><a id="__codelineno-7-62" name="__codelineno-7-62" href="#__codelineno-7-62"></a>    <span class="n">configure_checkpoint</span><span class="o">=</span><span class="n">configure_csv_checkpoint</span><span class="p">,</span>
 </span><span id="__span-7-63"><a id="__codelineno-7-63" name="__codelineno-7-63" href="#__codelineno-7-63"></a><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><strong><code>task_id</code></strong>: alphanumeric name used in the Airflow UI and GX Cloud.</li>
+<li><strong><code>task_id</code></strong>: alphanumeric name used in the Airflow UI.</li>
 <li><strong><code>configure_checkpoint</code></strong>: function that returns a <a href="https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/create_a_checkpoint_with_actions">Checkpoint</a>, which orchestrates a ValidationDefinition, BatchDefinition, and ExpectationSuite. The Checkpoint can also specify a Result Format and trigger actions based on Validation Results.</li>
 <li><strong><code>batch_parameters</code> (optional)</strong>: dictionary that specifies a <a href="https://docs.greatexpectations.io/docs/core/define_expectations/retrieve_a_batch_of_test_data">time-based Batch of data</a> to validate your Expectations against. Defaults to the first valid Batch found, which is the most recent Batch (with default sort ascending) or the oldest Batch if the Batch Definition has been configured to sort descending.</li>
-<li><strong><code>context_type</code> (optional)</strong>: accepts <code>ephemeral</code>, <code>cloud</code>, or <code>file</code> to set the <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context">Data Context</a> used by the Operator. Defaults to <code>ephemeral</code>, which does not persist results between runs. To save and view Validation Results in GX Cloud, use <code>cloud</code> and complete the additional Cloud Data Context configuration below. To manage Validation Results yourself, use <code>file</code> and complete the additional File Data Context configuration below.</li>
+<li><strong><code>context_type</code></strong>: accepts <code>ephemeral</code> or <code>file</code> to set the <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context">Data Context</a> used by the Operator. Defaults to <code>ephemeral</code>, which does not persist results between runs. To manage Validation Results yourself, use <code>file</code> and complete the additional File Data Context configuration below.</li>
 <li><strong><code>configure_file_data_context</code> (optional)</strong>: function that returns a <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context?context_type=file">FileDataContext</a>. Applicable only when using a File Data Context. See the additional File Data Context configuration below for more information.</li>
 </ul>
 </li>
 </ol>
 <p>For more details, explore this <a href="https://github.com/great-expectations/airflow-provider-great-expectations/tree/docs/great_expectations_provider/example_dags/example_dag_with_batch_parameters.py#L134-L137">end-to-end code sample</a>.</p>
 <ol>
-<li>
-<p>If you use a Cloud Data Context, create a <a href="https://app.greatexpectations.io/">free GX Cloud account</a> to get your <a href="https://docs.greatexpectations.io/docs/cloud/connect/connect_python#get-your-user-access-token-and-organization-id">Cloud credentials</a> and then set the following Airflow variables.</p>
-<ul>
-<li><code>GX_CLOUD_ACCESS_TOKEN</code></li>
-<li><code>GX_CLOUD_ORGANIZATION_ID</code></li>
-<li><code>GX_CLOUD_WORKSPACE_ID</code></li>
-</ul>
-<p>When using GX Cloud, you can define your configuration in code like the example above, or you can use the Cloud UI to create and edit your configuration.
-GX Cloud automatically creates a Checkpoint for you when you configure a Data Asset.
-You can find the name of this Checkpoint in the Cloud UI by selecting your Data Asset, navigating to the Validations tab, clicking the code snippet button in the upper right, and selecting Generate Snippet.
-The <code>GXValidateCheckpointOperator</code> creates an XCom that contains a link to view your results in the GX Cloud UI.</p>
-</li>
-<li>
-<p>If you use a File Data Context, pass the <code>configure_file_data_context</code> parameter. This takes a function that returns a <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context?context_type=file">FileDataContext</a>. By default, GX will write results in the configuration directory. If you are retrieving your FileDataContext from a remote location, you can yield the FileDataContext in the <code>configure_file_data_context</code> function and write the directory back to the remote after control is returned to the generator.</p>
-</li>
+<li>If you use a File Data Context, pass the <code>configure_file_data_context</code> parameter. This takes a function that returns a <a href="https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context?context_type=file">FileDataContext</a>. By default, GX will write results in the configuration directory. If you are retrieving your FileDataContext from a remote location, you can yield the FileDataContext in the <code>configure_file_data_context</code> function and write the directory back to the remote after control is returned to the generator.</li>
 </ol>
 <h3 id="manage-data-source-credentials-with-airflow-connections">Manage Data Source credentials with Airflow Connections</h3>
 <p>The Great Expectations Airflow Provider includes functions to retrieve connection credentials from other Airflow provider Connections.
@@ -1429,9 +1387,9 @@ and use it within your <code>configure_batch_definition</code> or <code>configur
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>   <span class="k">def</span><span class="w"> </span><span class="nf">configure_postgres_batch_definition</span><span class="p">(</span>
 </span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>           <span class="n">context</span><span class="p">:</span> <span class="n">AbstractDataContext</span><span class="p">,</span>
 </span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchDefinition</span><span class="p">:</span>
-</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>       <span class="n">task_id</span> <span class="o">=</span> <span class="s2">&quot;example_task&quot;</span>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>       <span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;example_table&quot;</span>
-</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>       <span class="n">postgres_conn_id</span> <span class="o">=</span> <span class="s2">&quot;example_conn_id&quot;</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>       <span class="n">task_id</span> <span class="o">=</span> <span class="s2">"example_task"</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>       <span class="n">table_name</span> <span class="o">=</span> <span class="s2">"example_table"</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>       <span class="n">postgres_conn_id</span> <span class="o">=</span> <span class="s2">"example_conn_id"</span>
 </span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>       <span class="k">return</span> <span class="p">(</span>
 </span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>           <span class="n">context</span><span class="o">.</span><span class="n">data_sources</span><span class="o">.</span><span class="n">add_postgres</span><span class="p">(</span>
 </span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>               <span class="n">name</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span>
@@ -1553,10 +1511,10 @@ and use it within your <code>configure_batch_definition</code> or <code>configur
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.sections", "navigation.tabs", "navigation.footer", "navigation.indexes", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.sections", "navigation.tabs", "navigation.footer", "navigation.indexes", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
