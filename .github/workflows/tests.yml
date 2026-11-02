@@ -172,6 +172,167 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pytest -m integration tests -ra
 
+  # The service jobs run the tests that need a database or a Spark server, on the lanes
+  # that `[services.*]` names in the support matrix. The Postgres and Spark images
+  # carry a tag and a digest, and both come from the `matrix` job's outputs.
+  postgres:
+    name: postgres (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.postgres) }}
+    # Throwaway values for a database that exists only for this job. The `env` context
+    # isn't available to `services`, so the service below repeats the first three.
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PORT: "5432"
+    services:
+      postgres:
+        image: ${{ needs.matrix.outputs.postgres-image }} # zizmor: ignore[unpinned-images] the matrix job emits the tag and digest reference, which zizmor cannot resolve from an expression.
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Steps start once the server accepts connections over TCP. The image's
+        # temporary start-up server listens only on a Unix socket, so a socket check
+        # could pass before the real server is up.
+        options: >-
+          --health-cmd "pg_isready --host localhost --username postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras postgresql,tests
+
+      - name: Run the Postgres tests
+        run: pytest -m postgres tests -ra
+
+  # PySpark runs a local Spark session on the runner's default JDK, so this job has no
+  # service. The pin sits under the lane's constraints file, so the lanes that
+  # `[services.spark]` names must be ones whose constraints leave pyspark unpinned.
+  spark:
+    name: spark (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }}, PySpark ${{ needs.matrix.outputs.pyspark-version }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.spark) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          PYSPARK_VERSION: ${{ needs.matrix.outputs.pyspark-version }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras spark,tests
+          --with "pyspark==$PYSPARK_VERSION"
+
+      - name: Run the Spark tests
+        run: pytest -m spark_integration tests -ra
+
+  # A Spark Connect client and server must run the same Spark version, so the server
+  # image and the PySpark pin both come from the matrix, and they agree by construction.
+  spark-connect:
+    name: spark-connect (Airflow ${{ matrix.lane.airflow }}, Python ${{ matrix.lane.python }}, PySpark ${{ needs.matrix.outputs.pyspark-version }})
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.matrix.outputs.spark) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.lane.python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the lane
+        env:
+          LANE_AIRFLOW: ${{ matrix.lane.airflow }}
+          LANE_PYTHON: ${{ matrix.lane.python }}
+          LANE_CONSTRAINTS_URL: ${{ matrix.lane.constraints_url }}
+          PYSPARK_VERSION: ${{ needs.matrix.outputs.pyspark-version }}
+        run: >-
+          python .github/scripts/lane_install.py --mode constrained
+          --airflow "$LANE_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$LANE_CONSTRAINTS_URL" --extras spark,tests
+          --with "pyspark==$PYSPARK_VERSION"
+
+      - name: Start the Spark Connect server
+        env:
+          SPARK_IMAGE: ${{ needs.matrix.outputs.spark-image }}
+        run: >-
+          docker compose -f docker/spark/docker-compose.yml up --detach --quiet-pull
+          --wait --wait-timeout 120
+
+      - name: Run the Spark Connect tests
+        run: pytest -m spark_connect_integration tests -ra
+
+      - name: Show the Spark Connect server log
+        if: ${{ failure() }}
+        run: docker compose -f docker/spark/docker-compose.yml logs --no-color
+
   tests-passed:
     name: tests-passed
     # Runs even when a needed job failed, was cancelled or was skipped, and then
@@ -183,6 +344,9 @@ jobs:
       - extras
       - unit
       - integration
+      - postgres
+      - spark
+      - spark-connect
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
