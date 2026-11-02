@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Callable, Literal
 
 from airflow.models import BaseOperator
@@ -46,8 +45,7 @@ class GXValidateBatchOperator(BaseOperator):
         configure_batch_definition: Callable[[AbstractDataContext], BatchDefinition],
         configure_expectations: Callable[
             [AbstractDataContext], Expectation | ExpectationSuite
-        ]
-        | None = None,
+        ],
         batch_parameters: BatchParameters | None = None,
         result_format: (
             Literal["BOOLEAN_ONLY", "BASIC", "SUMMARY", "COMPLETE"] | None
@@ -55,22 +53,7 @@ class GXValidateBatchOperator(BaseOperator):
         *args,
         **kwargs,
     ) -> None:
-        # Handle deprecated 'expect' parameter - store directly for serialization safety
-        # Must pop before calling super().__init__() as Airflow 3 rejects unknown kwargs
-        self._deprecated_expect: Expectation | ExpectationSuite | None = None
-        if "expect" in kwargs:
-            warnings.warn(
-                "The 'expect' parameter is deprecated. Use 'configure_expectations' instead. "
-                "Pass a callable that takes an AbstractDataContext and returns an Expectation or ExpectationSuite.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self._deprecated_expect = kwargs.pop("expect")
-
         super().__init__(*args, **kwargs)
-
-        if configure_expectations is None and self._deprecated_expect is None:
-            raise ValueError("configure_expectations is required")
 
         if batch_parameters is None:
             self.batch_parameters = {}
@@ -84,12 +67,7 @@ class GXValidateBatchOperator(BaseOperator):
         gx_context = load_data_context()
         batch_definition = self.configure_batch_definition(gx_context)
 
-        if self.configure_expectations is not None:
-            expect = self.configure_expectations(gx_context)
-        elif self._deprecated_expect is not None:
-            expect = self._deprecated_expect
-        else:
-            raise ValueError("configure_expectations is required")
+        expect = self.configure_expectations(gx_context)
 
         runtime_batch_params = context.get("params", {}).get("gx_batch_parameters")  # type: ignore[call-overload]
         if runtime_batch_params:
