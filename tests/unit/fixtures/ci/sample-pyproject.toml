@@ -1,0 +1,119 @@
+# A frozen copy of the package metadata as it stood when the CI consistency check and
+# the upstream drift check were written: `apache-airflow>=2.1, <4`, `requires-python
+# >3.9, <3.14` and Python classifiers 3.10-3.13. The tests of those checks assert their
+# findings against this file rather than the repository's own `pyproject.toml`, so
+# changing the package's declared support does not change what they expect. Leave the
+# content below as it is; edit it only to change what the tests exercise.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "airflow-provider-great-expectations"
+dynamic = ["version"]
+description = "An Apache Airflow provider for Great Expectations"
+readme = "README.md"
+authors = [
+  {name = "Great Expectations", email = "team@greatexpectations.io"}
+]
+license = "Apache-2.0"
+license-files = { paths = ["LICENSE"] }
+requires-python = ">3.9, <3.14"
+keywords = ["airflow", "great expectations", "provider"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Apache Airflow",
+    "Framework :: Apache Airflow :: Provider",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
+]
+dependencies = [
+    "great-expectations>=1.7.0, <2",
+    "apache-airflow>=2.1, <4",
+    "structlog<25.5.0",  # airflow <3.1.3 imports Styles removed in 25.5.0
+]
+
+[project.optional-dependencies]
+athena = ["great-expectations[athena]>=1.7.0, <2"]
+azure = ["great-expectations[azure]>=1.7.0, <2"]
+bigquery = ["great-expectations[bigquery]>=1.7.0, <2"]
+lint = [
+    "mypy==1.14.1",
+    "ruff==0.8.3",
+    "pytest==8.3.4",
+    "pytest-mock==3.14.0",
+    "great-expectations[spark, spark-connect]>=1.7.0, <2"
+]
+gcp = ["great-expectations[gcp]>=1.7.0, <2"]
+mssql = ["great-expectations[mssql]>=1.7.0, <2"]
+postgresql = ["great-expectations[postgresql]>=1.7.0, <2"]
+s3 = ["great-expectations[s3]>=1.7.0, <2"]
+snowflake = ["great-expectations[snowflake]>=1.7.0, <2"]
+spark = [
+    "great-expectations[spark, spark-connect]>=1.7.0, <2",
+    "pyarrow>=4.0.0",
+    "setuptools",  # pyspark needs distutils, removed in Python 3.12
+]
+trino = ["great-expectations[trino]>=1.7.0, <2"]
+tests = [
+    "pytest==8.3.4",
+    "pytest-mock==3.14.0"
+]
+
+[project.entry-points.apache_airflow_provider]
+provider_info = "great_expectations_provider.get_provider_info:get_provider_info"
+
+[project.urls]
+Homepage = "https://github.com/great-expectations/airflow-provider-great-expectations"
+Documentation = "https://great-expectations.github.io/airflow-provider-great-expectations/latest"
+"Source Code" = "https://github.com/great-expectations/airflow-provider-great-expectations"
+"Changelog" = "https://github.com/great-expectations/airflow-provider-great-expectations/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "great_expectations_provider/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/great_expectations_provider"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["/great_expectations_provider"]
+
+[tool.mypy]
+exclude = ["env/", ".env/","venv/", ".venv/", "build/"]
+follow_untyped_imports = true
+check_untyped_defs = true
+
+[tool.ruff]
+lint.select = [
+    "I",
+    "TC",
+]
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+######################################
+# DOCS
+######################################
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "mkdocs",
+    "mike",
+    "pymdown-extensions",
+    "mkdocs-material",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build"  # Build docs without serving (used in CI)
+dev = "mkdocs build && mkdocs serve"  # For local development
+gh-deploy = "python scripts/docs_deploy.py dev"
+gh-release = "python scripts/docs_deploy.py release"

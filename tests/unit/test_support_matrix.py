@@ -16,6 +16,12 @@ SCRIPT_PATH = Path(__file__).parents[2] / ".github" / "scripts" / "support_matri
 # A frozen snapshot of the matrix. Tests of the scripts' behaviour read it, not the
 # checked-in matrix, so a routine matrix update does not change what they expect.
 FROZEN_MATRIX_PATH = Path(__file__).parent / "fixtures" / "ci" / "support-matrix.toml"
+# A frozen copy of the package metadata. Tests of the consistency check assert its
+# findings against this, not the repository's own pyproject.toml, so changing the
+# package's declared support does not change what they expect.
+FROZEN_PYPROJECT_PATH = (
+    Path(__file__).parent / "fixtures" / "ci" / "sample-pyproject.toml"
+)
 RENDER_HEADER = (
     "<!-- Generated from `.github/support-matrix.toml`; run "
     "`python .github/scripts/support_matrix.py render --write`. -->\n"
@@ -496,13 +502,36 @@ def _consistency_repo(tmp_path: Path, pyproject: str, compose: str = "") -> Path
     return root
 
 
-def test_consistency_reports_current_metadata_disagreements(
-    support_matrix_module,
-):
-    matrix = support_matrix_module.load(MATRIX_PATH)
-    root = SCRIPT_PATH.parents[2]
+def _frozen_repo(tmp_path: Path, support_matrix_module) -> Path:
+    """A scratch repository holding the frozen package metadata and frozen matrix.
 
-    findings = support_matrix_module.check_consistency(matrix, root)
+    Everything the check reads other than the metadata agrees with the matrix: the
+    rendered fragment is tracked and the compose default is the matrix's image.
+    """
+    matrix = support_matrix_module.load(FROZEN_MATRIX_PATH)
+    image = matrix.services["spark"].image
+    root = _consistency_repo(
+        tmp_path,
+        FROZEN_PYPROJECT_PATH.read_text(encoding="utf-8"),
+        f"services:\n  spark:\n    image: ${{SPARK_IMAGE:-{image}}}\n",
+    )
+    (root / ".github/support-matrix.toml").write_bytes(FROZEN_MATRIX_PATH.read_bytes())
+    (root / ".github/support-matrix.md").write_text(
+        support_matrix_module.render_table(matrix), encoding="utf-8"
+    )
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "add", ".github/support-matrix.md"], check=True
+    )
+    return root
+
+
+def test_consistency_reports_the_frozen_metadata_disagreements(
+    support_matrix_module, frozen_matrix, tmp_path
+):
+    root = _frozen_repo(tmp_path, support_matrix_module)
+
+    findings = support_matrix_module.check_consistency(frozen_matrix, root)
 
     assert {(item.rule, item.field) for item in findings} == {
         ("C1", "apache-airflow floor"),
@@ -512,6 +541,25 @@ def test_consistency_reports_current_metadata_disagreements(
     }
     assert not any(item.rule == "C2" for item in findings)
     assert all(item.source for item in findings)
+    by_field = {item.field: item for item in findings}
+    assert (
+        by_field["apache-airflow floor"].expected,
+        by_field["apache-airflow floor"].actual,
+    ) == ("2.11", "2.1")
+    assert (
+        by_field["requires-python floor"].expected,
+        by_field["requires-python floor"].actual,
+    ) == ("3.11", "3.9")
+    assert by_field["requires-python upper bound"].actual == "<3.14"
+    classifiers = by_field["Python classifiers"]
+    assert classifiers.expected == ", ".join(
+        f"Programming Language :: Python :: {version}"
+        for version in ("3.11", "3.12", "3.13", "3.14")
+    )
+    assert classifiers.actual == ", ".join(
+        f"Programming Language :: Python :: {version}"
+        for version in ("3.10", "3.11", "3.12", "3.13")
+    )
 
 
 def test_consistency_accepts_2_0_shaped_metadata(
@@ -712,18 +760,51 @@ def test_consistency_reports_invalid_requires_python(
     )
 
 
-def test_check_command_prints_each_disagreement_and_returns_one():
+def test_check_command_prints_each_disagreement_and_returns_one(
+    support_matrix_module, tmp_path
+):
+    root = _frozen_repo(tmp_path, support_matrix_module)
+    script = root / ".github" / "scripts" / "support_matrix.py"
+    script.parent.mkdir(parents=True)
+    script.write_bytes(SCRIPT_PATH.read_bytes())
+
     result = subprocess.run(
-        [sys.executable, str(SCRIPT_PATH), "check"],
-        cwd=SCRIPT_PATH.parents[2],
+        [sys.executable, str(script), "check"],
+        cwd=root,
         check=False,
         capture_output=True,
         text=True,
     )
 
     assert result.returncode == 1, result.stdout + result.stderr
-    assert "C1" in result.stdout and "C3" in result.stdout and "C4" in result.stdout
+    printed = [line.split(" ", 1)[0] for line in result.stdout.splitlines()]
+    assert printed == ["C1", "C3", "C3", "C4"], result.stdout
     assert "C7" not in result.stdout
+
+
+def test_check_command_on_the_repository_exits_cleanly_with_well_formed_findings(
+    support_matrix_module, checked_in_matrix
+):
+    root = SCRIPT_PATH.parents[2]
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "check"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    findings = support_matrix_module.check_consistency(checked_in_matrix, root)
+
+    # Which rules fire depends on what the repository declares at the time; the
+    # frozen copies above pin the specific findings. This only checks the wiring.
+    assert result.returncode in (0, 1), result.stdout + result.stderr
+    assert result.stderr == ""
+    assert (result.returncode == 1) == bool(findings)
+    for item in findings:
+        assert re.fullmatch(r"C[1-7]", item.rule)
+        assert item.source and item.field and item.hint
+        assert f"{item.rule} {item.source}: {item.field}:" in result.stdout
 
 
 def test_render_write_and_check_cli_and_stale_detection(tmp_path):

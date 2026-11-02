@@ -24,14 +24,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      issues: write
+      issues: write # opens or comments on the tracking issue, and does nothing else
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       WORKFLOW_NAME: ${{ inputs.workflow }}
       RUN_URL: ${{ inputs.run-url }}
       ISSUE_TITLE: "Scheduled CI failure: ${{ inputs.workflow }}"
-      GUIDE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/.github/CI.md
+      # A scheduled run's event payload is not documented to carry the repository, so
+      # `default_branch` can be empty there. Scheduled runs always run on the default
+      # branch, so the ref name is the same branch.
+      GUIDE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch || github.ref_name }}/.github/CI.md
     steps:
       - name: Find or create tracking issue
         shell: bash

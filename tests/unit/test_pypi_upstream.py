@@ -16,6 +16,10 @@ FIXTURES = Path(__file__).parent / "fixtures/ci"
 # Tests read this frozen matrix, not the checked-in one, so a routine matrix update
 # does not change what they expect.
 FROZEN_MATRIX = FIXTURES / "support-matrix.toml"
+# Likewise a frozen copy of the package metadata (`apache-airflow>=2.1, <4`,
+# `requires-python >3.9, <3.14`), so changing the package's declared support does not
+# change what the drift tests expect.
+FROZEN_PYPROJECT = FIXTURES / "sample-pyproject.toml"
 
 
 @pytest.fixture
@@ -61,9 +65,7 @@ def airflow_scenario(project):
 def test_reference_drift_reports_both_floors_and_reference_version(
     upstream, data, matrix
 ):
-    findings = upstream.reference_drift(
-        matrix, ROOT / "pyproject.toml", data["reference"]
-    )
+    findings = upstream.reference_drift(matrix, FROZEN_PYPROJECT, data["reference"])
     assert len(findings) == 2
     assert all(
         item.rule == "D1" and str(data["reference"].latest_version) in item.message
@@ -113,7 +115,7 @@ def test_matrix_freshness_flags_newer_finals_but_ignores_yanked_and_prerelease(
     upstream, data, matrix
 ):
     findings = upstream.matrix_freshness(
-        matrix, ROOT / "pyproject.toml", airflow_scenario(data["airflow"])
+        matrix, FROZEN_PYPROJECT, airflow_scenario(data["airflow"])
     )
     assert any("3.3.3" in item.message for item in findings)
     assert any("3.4.0" in item.message for item in findings)
@@ -206,7 +208,14 @@ def test_drift_cli_returns_findings_and_fetch_failure_exit_two(
         "great-expectations": data["gx"],
     }
     monkeypatch.setattr(upstream, "fetch", lambda project: projects[project])
-    assert upstream.main(["drift", "--matrix", str(FROZEN_MATRIX)]) == 1
+    drift_args = [
+        "drift",
+        "--matrix",
+        str(FROZEN_MATRIX),
+        "--pyproject",
+        str(FROZEN_PYPROJECT),
+    ]
+    assert upstream.main(drift_args) == 1
     output = capsys.readouterr().out
     assert "D1:" in output and "2.4.0" in output
     assert ">3.9" in output and ">=3.11" in output
@@ -217,7 +226,7 @@ def test_drift_cli_returns_findings_and_fetch_failure_exit_two(
         )
 
     monkeypatch.setattr(upstream, "fetch", fail)
-    assert upstream.main(["drift", "--matrix", str(FROZEN_MATRIX)]) == 2
+    assert upstream.main(drift_args) == 2
     error = capsys.readouterr().err
     assert "apache-airflow-providers-common-sql" in error
     assert "https://pypi.org/pypi/apache-airflow-providers-common-sql/json" in error
