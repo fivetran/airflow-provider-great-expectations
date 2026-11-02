@@ -1,41 +1,17 @@
 services:
-  spark:
-    image: apache/spark:3.5.2-java17
-    container_name: spark
-    environment:
-      SPARK_NO_DAEMONIZE: "true"          # keep master in foreground
+  spark-connect:
+    # The default is the Spark image pinned in .github/support-matrix.toml; override it with SPARK_IMAGE.
+    # Keep the server version equal to the installed pyspark client version.
+    image: ${SPARK_IMAGE:-apache/spark:4.1.3-java17@sha256:9b0a6c2c860f5e7d18dd5270286fef32a09c7f5a7e2b0dbe5642de8a3a02ab3e}
+    container_name: spark-connect
     ports:
-      - "9090:8080"                       # Master UI
-      - "7077:7077"                       # Master RPC
-    command: ["/opt/spark/sbin/start-master.sh", "--host", "0.0.0.0"]
+      - "15002:15002"                     # Spark Connect gRPC
+    # The Connect server ships in the Spark distribution, so nothing is downloaded at start.
+    # --wait keeps the server in the foreground, which is what keeps the container running.
+    command: ["/opt/spark/sbin/start-connect-server.sh", "--wait"]
     healthcheck:
-      test: ["CMD", "bash", "-lc", "curl -fsS http://localhost:8080 >/dev/null"]
+      # Healthy once the gRPC port accepts connections.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/15002"]
       interval: 5s
       timeout: 3s
       retries: 20
-
-  spark-connect:
-    image: apache/spark:3.5.2-java17
-    container_name: spark-connect
-    depends_on:
-      spark:
-        condition: service_healthy
-    environment:
-      SPARK_NO_DAEMONIZE: "true"          # keep connect server in foreground
-    ports:
-      - "15002:15002"
-    # Avoid Maven coordinate resolution; hand Spark the jar URL directly.
-    command:
-      - /opt/spark/bin/spark-submit
-      - --class
-      - org.apache.spark.sql.connect.service.SparkConnectServer
-      - --name
-      - Spark Connect server
-      - --master
-      - local[2]  # local mode, 2 cores
-      - --conf
-      - spark.connect.grpc.binding.address=0.0.0.0
-      - --conf
-      - spark.connect.grpc.binding.port=15002
-      - --jars
-      - https://repo1.maven.org/maven2/org/apache/spark/spark-connect_2.12/3.5.2/spark-connect_2.12-3.5.2.jar

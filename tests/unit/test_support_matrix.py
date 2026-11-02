@@ -413,7 +413,6 @@ def test_consistency_reports_current_metadata_disagreements(
         ("C3", "requires-python floor"),
         ("C3", "requires-python upper bound"),
         ("C4", "Python classifiers"),
-        ("C7", "SPARK_IMAGE default"),
     }
     assert not any(item.rule == "C2" for item in findings)
     assert all(item.source for item in findings)
@@ -628,7 +627,7 @@ def test_check_command_prints_each_disagreement_and_returns_one():
 
     assert result.returncode == 1, result.stdout + result.stderr
     assert "C1" in result.stdout and "C3" in result.stdout and "C4" in result.stdout
-    assert "C7" in result.stdout
+    assert "C7" not in result.stdout
 
 
 def test_render_write_and_check_cli_and_stale_detection(tmp_path):
