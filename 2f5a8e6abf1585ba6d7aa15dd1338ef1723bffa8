@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "2f5a8e6abf1585ba6d7aa15dd1338ef1723bffa8",
+  "prompts": {
+    "7800039f8f1a3cfc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "00ef8749-f1f3-4c53-b4d1-a574ffa8a350",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 64,
+      "total_deletions": 92,
+      "accepted_lines": 50,
+      "overriden_lines": 3
+    }
+  }
+}
