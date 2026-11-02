@@ -1,0 +1,238 @@
+name: Canaries
+
+# Two canaries look ahead of what the support matrix lists. The pre-release canary
+# installs the newest Airflow pre-release, and the newest Great Expectations pre-release
+# when one is newer than the newest final release, so an incompatibility shows up before
+# the release does. The next-Python canary installs the provider on the Python that the
+# matrix names as next, once both Airflow and Great Expectations declare it.
+#
+# Neither canary blocks a merge: nothing aggregates them, no job here is a required
+# check, and a failure turns this run red without touching any pull request. Every
+# Python version, the uv version and every upstream version come from the `matrix` job's
+# outputs or from the `targets` job's PyPI lookup, so nothing here names a release.
+#
+# The workflow runs weekly on the default branch and on demand. A pull request runs it
+# only when the pull request changes this workflow, the CI scripts or the support
+# matrix. A failed scheduled run opens or updates a tracking issue.
+
+on:
+  schedule:
+    - cron: "29 7 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/canaries.yml
+      - .github/scripts/**
+      - .github/support-matrix.toml
+
+# A pull request has its own group, and a scheduled or manual run groups by ref. A run is
+# cancelled only by a newer run of the same pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  matrix:
+    name: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      lowest-python: ${{ steps.emit.outputs.lowest-python }}
+      next-python: ${{ steps.emit.outputs.next-python }}
+      uv-version: ${{ steps.emit.outputs.uv-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Emit support matrix outputs
+        id: emit
+        run: python3 .github/scripts/support_matrix.py emit
+
+  # Reads PyPI once, so the canary jobs and their names agree on what they target. A
+  # PyPI outage fails this job, which skips the canaries and turns the run red.
+  targets:
+    name: targets
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      airflow: ${{ steps.prerelease.outputs.airflow }}
+      constraints_url: ${{ steps.prerelease.outputs.constraints_url }}
+      gx: ${{ steps.prerelease.outputs.gx }}
+      next_python_gate: ${{ steps.gate.outputs.next_python_gate }}
+      missing: ${{ steps.gate.outputs.missing }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: false
+
+      # The newest Airflow pre-release newer than the newest tested release, or that
+      # release when there is none, with its constraints file when one exists. The
+      # newest Great Expectations pre-release is selected only when it is newer than
+      # the newest final release, and the output is empty otherwise.
+      - name: Select the pre-release targets
+        id: prerelease
+        run: >-
+          uv run --no-project --with-requirements .github/scripts/requirements.txt
+          python .github/scripts/pypi_upstream.py prerelease
+
+      # The gate is open once the newest Airflow and Great Expectations releases both
+      # declare the next Python. Otherwise `missing` names each one that doesn't.
+      - name: Check the next-Python gate
+        id: gate
+        run: >-
+          uv run --no-project --with-requirements .github/scripts/requirements.txt
+          python .github/scripts/pypi_upstream.py next-python-gate
+
+  # The target is installed with the pre-release requirements that Airflow itself pins,
+  # so a pre-release is installed only where it is named, never wholesale. The version
+  # report in the summary shows what resolved.
+  prerelease:
+    name: "pre-release canary (non-blocking): Airflow ${{ needs.targets.outputs.airflow }}, GX ${{ needs.targets.outputs.gx || 'stable' }}"
+    needs:
+      - matrix
+      - targets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ needs.matrix.outputs.lowest-python }}
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      # A target with no constraints file is installed without one, and the report says
+      # so. The Great Expectations requirement is empty when it has no pre-release to
+      # test, and the installer treats an empty requirement as absent.
+      - name: Install the pre-release target
+        id: install
+        env:
+          TARGET_AIRFLOW: ${{ needs.targets.outputs.airflow }}
+          TARGET_CONSTRAINTS_URL: ${{ needs.targets.outputs.constraints_url }}
+          TARGET_GX_REQUIREMENT: ${{ needs.targets.outputs.gx && format('great-expectations=={0}', needs.targets.outputs.gx) || '' }}
+          LANE_PYTHON: ${{ needs.matrix.outputs.lowest-python }}
+        run: >-
+          python .github/scripts/lane_install.py --mode prerelease
+          --airflow "$TARGET_AIRFLOW" --python "$LANE_PYTHON"
+          --constraints-url "$TARGET_CONSTRAINTS_URL" --extras tests
+          --with "$TARGET_GX_REQUIREMENT"
+
+      - name: Run the unit tests
+        run: pytest -m unit tests -ra
+
+      # A failed unit test must not hide the smoke-test result, so this step runs
+      # whenever the canary installed, unless the run was cancelled.
+      - name: Smoke-test the example DAGs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: .github/scripts/run_example_dags.sh
+
+  # While the gate is closed the job installs nothing and succeeds, and its summary
+  # names each package that lacks the declaration. Every other step waits for the gate.
+  next-python:
+    name: "next-Python canary (non-blocking): Python ${{ needs.matrix.outputs.next-python }}"
+    needs:
+      - matrix
+      - targets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Report the closed gate
+        if: ${{ needs.targets.outputs.next_python_gate != 'true' }}
+        env:
+          NEXT_PYTHON: ${{ needs.matrix.outputs.next-python }}
+          MISSING: ${{ needs.targets.outputs.missing }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$MISSING" ]; then
+            echo "error: the gate is closed, but no package was reported as missing the declaration" >&2
+            exit 1
+          fi
+          IFS=',' read -ra declarations <<< "$MISSING"
+          {
+            echo "### Next-Python canary: gate closed"
+            echo
+            echo "Nothing was installed. The newest releases of Airflow and Great Expectations must both declare Python ${NEXT_PYTHON}, and these do not:"
+            echo
+            for declaration in "${declarations[@]}"; do
+              echo "- ${declaration}"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - if: ${{ needs.targets.outputs.next_python_gate == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A Python that is not final yet is published as a pre-release, so allow one.
+      - if: ${{ needs.targets.outputs.next_python_gate == 'true' }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ needs.matrix.outputs.next-python }}
+          allow-prereleases: true
+
+      - if: ${{ needs.targets.outputs.next_python_gate == 'true' }}
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: ${{ needs.matrix.outputs.uv-version }}
+          enable-cache: true
+
+      - name: Install the provider on the next Python
+        id: install
+        if: ${{ needs.targets.outputs.next_python_gate == 'true' }}
+        env:
+          NEXT_PYTHON: ${{ needs.matrix.outputs.next-python }}
+        run: >-
+          python .github/scripts/lane_install.py --mode next-python
+          --python "$NEXT_PYTHON" --extras tests
+
+      - name: Run the unit tests
+        if: ${{ needs.targets.outputs.next_python_gate == 'true' }}
+        run: pytest -m unit tests -ra
+
+      # A failed unit test must not hide the smoke-test result, so this step runs
+      # whenever the canary installed, unless the run was cancelled.
+      - name: Smoke-test the example DAGs
+        if: ${{ !cancelled() && needs.targets.outputs.next_python_gate == 'true' && steps.install.outcome == 'success' }}
+        run: .github/scripts/run_example_dags.sh
+
+  # Opens or updates the tracking issue when a scheduled run fails. A failed `matrix` or
+  # `targets` skips both canaries, so those two are watched as well. `!cancelled()`
+  # keeps a run that someone cancelled from opening an issue.
+  report:
+    name: Report scheduled failure
+    needs:
+      - matrix
+      - targets
+      - prerelease
+      - next-python
+    if: ${{ !cancelled() && contains(needs.*.result, 'failure') && github.event_name == 'schedule' }}
+    uses: ./.github/workflows/report-scheduled-failure.yml # zizmor: ignore[self-repository] actionlint does not yet parse the $/ form; ./ resolves the called workflow from the caller's commit.
+    permissions:
+      issues: write # the called workflow opens or comments on the tracking issue, and does nothing else
+    with:
+      workflow: ${{ github.workflow }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
