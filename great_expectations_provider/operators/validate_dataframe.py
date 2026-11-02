@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Callable, Literal
 
 from airflow.models import BaseOperator
@@ -49,30 +48,14 @@ class GXValidateDataFrameOperator(BaseOperator):
         ],
         configure_expectations: Callable[
             [AbstractDataContext], Expectation | ExpectationSuite
-        ]
-        | None = None,
+        ],
         result_format: (
             Literal["BOOLEAN_ONLY", "BASIC", "SUMMARY", "COMPLETE"] | None
         ) = None,
         *args,
         **kwargs,
     ) -> None:
-        # Handle deprecated 'expect' parameter - store directly for serialization safety
-        # Must pop before calling super().__init__() as Airflow 3 rejects unknown kwargs
-        self._deprecated_expect: Expectation | ExpectationSuite | None = None
-        if "expect" in kwargs:
-            warnings.warn(
-                "The 'expect' parameter is deprecated. Use 'configure_expectations' instead. "
-                "Pass a callable that takes an AbstractDataContext and returns an Expectation or ExpectationSuite.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self._deprecated_expect = kwargs.pop("expect")
-
         super().__init__(*args, **kwargs)
-
-        if configure_expectations is None and self._deprecated_expect is None:
-            raise ValueError("configure_expectations is required")
 
         self.dataframe = configure_dataframe()
         self.configure_expectations = configure_expectations
@@ -93,12 +76,7 @@ class GXValidateDataFrameOperator(BaseOperator):
                 f"Unsupported dataframe type: {type(self.dataframe).__name__}"
             )
 
-        if self.configure_expectations is not None:
-            expect = self.configure_expectations(gx_context)
-        elif self._deprecated_expect is not None:
-            expect = self._deprecated_expect
-        else:
-            raise ValueError("configure_expectations is required")
+        expect = self.configure_expectations(gx_context)
 
         batch_parameters = {
             "dataframe": self.dataframe,

@@ -5,6 +5,7 @@ from unittest.mock import Mock, create_autospec
 
 import pandas as pd
 import pytest
+from airflow.exceptions import AirflowException
 from great_expectations import ExpectationSuite
 from great_expectations.core import ExpectationValidationResult
 from great_expectations.data_context import AbstractDataContext, EphemeralDataContext
@@ -405,8 +406,45 @@ class TestValidateDataFrameOperator:
         result = call_args[1]["value"]
         assert result["success"] is False
 
-    def test_deprecated_expect_parameter_raises_warning(self) -> None:
-        """Expect that using deprecated 'expect' parameter raises DeprecationWarning but still works."""
+    def test_expect_parameter_is_rejected(self) -> None:
+        """Expect that the removed 'expect' parameter fails at construction as an invalid argument."""
+
+        # arrange
+        column_name = "col_A"
+
+        def configure_dataframe() -> pd.DataFrame:
+            return pd.DataFrame({column_name: ["a", "b", "c"]})
+
+        def configure_expectations(
+            context: AbstractDataContext,
+        ) -> ExpectColumnValuesToBeInSet:
+            return ExpectColumnValuesToBeInSet(
+                column=column_name,
+                value_set=["a", "b", "c"],  # type: ignore[arg-type]
+            )
+
+        expect = ExpectColumnValuesToBeInSet(
+            column=column_name,
+            value_set=["a"],  # type: ignore[arg-type]
+        )
+
+        # act & assert
+        with pytest.raises(
+            (AirflowException, TypeError), match="Invalid arguments were passed"
+        ) as exc_info:
+            GXValidateDataFrameOperator(
+                task_id="validate_df_expect",
+                configure_dataframe=configure_dataframe,
+                configure_expectations=configure_expectations,
+                expect=expect,
+            )
+        assert "'expect'" in str(exc_info.value)
+
+    def test_expect_parameter_without_configure_expectations_is_rejected(
+        self,
+    ) -> None:
+        """Expect that a 1.x style call passing only 'expect' fails at construction."""
+
         # arrange
         column_name = "col_A"
 
@@ -415,36 +453,33 @@ class TestValidateDataFrameOperator:
 
         expect = ExpectColumnValuesToBeInSet(
             column=column_name,
-            value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
+            value_set=["a"],  # type: ignore[arg-type]
         )
 
         # act & assert
-        with pytest.warns(
-            DeprecationWarning, match="The 'expect' parameter is deprecated"
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
         ):
-            validate_df = GXValidateDataFrameOperator(
-                task_id="validate_df_deprecated",
+            GXValidateDataFrameOperator(  # type: ignore[call-arg]
+                task_id="validate_df_expect_only",
                 configure_dataframe=configure_dataframe,
                 expect=expect,
             )
 
-        # Verify it still works
-        mock_ti = Mock()
-        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
-        validate_df.execute(context=context)
-        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
-        assert pushed_result["success"] is True
-
-    def test_missing_configure_expectations_raises_value_error(self) -> None:
-        """Expect that omitting both 'configure_expectations' and deprecated 'expect' raises ValueError."""
+    def test_missing_configure_expectations_is_rejected(self) -> None:
+        """Expect that omitting 'configure_expectations' fails at construction."""
 
         # arrange
         def configure_dataframe() -> pd.DataFrame:
             return pd.DataFrame({"col": [1, 2, 3]})
 
         # act & assert
-        with pytest.raises(ValueError, match="configure_expectations is required"):
-            GXValidateDataFrameOperator(
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
+        ):
+            GXValidateDataFrameOperator(  # type: ignore[call-arg]
                 task_id="validate_df_missing",
                 configure_dataframe=configure_dataframe,
             )

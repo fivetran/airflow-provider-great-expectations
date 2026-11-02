@@ -5,6 +5,7 @@ from unittest.mock import Mock, create_autospec
 
 import pandas as pd
 import pytest
+from airflow.exceptions import AirflowException
 from great_expectations import ExpectationSuite
 from great_expectations.core import ExpectationValidationResult
 from great_expectations.core.batch_definition import BatchDefinition
@@ -481,8 +482,8 @@ class TestValidateBatchOperator:
         result = call_args[1]["value"]
         assert result["success"] is False
 
-    def test_deprecated_expect_parameter_raises_warning(self):
-        """Expect that using deprecated 'expect' parameter raises DeprecationWarning but still works."""
+    def test_expect_parameter_is_rejected(self):
+        """Expect that the removed 'expect' parameter fails at construction as an invalid argument."""
 
         # arrange
         def configure_ephemeral_batch_definition(
@@ -495,31 +496,58 @@ class TestValidateBatchOperator:
             )
 
         column_name = "col_A"
-        df = pd.DataFrame({column_name: ["a", "b", "c"]})
-        expect = ExpectColumnValuesToBeInSet(
-            column=column_name, value_set=["a", "b", "c", "d", "e"]
-        )
 
-        # act & assert
-        with pytest.warns(
-            DeprecationWarning, match="The 'expect' parameter is deprecated"
-        ):
-            validate_batch = GXValidateBatchOperator(
-                task_id="validate_batch_deprecated",
-                configure_batch_definition=configure_ephemeral_batch_definition,
-                expect=expect,
-                batch_parameters={"dataframe": df},
+        def configure_expectations(
+            context: AbstractDataContext,
+        ) -> ExpectColumnValuesToBeInSet:
+            return ExpectColumnValuesToBeInSet(
+                column=column_name, value_set=["a", "b", "c"]
             )
 
-        # Verify it still works
-        mock_ti = Mock()
-        context: Context = {"ti": mock_ti}  # type: ignore[typeddict-item]
-        validate_batch.execute(context=context)
-        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
-        assert pushed_result["success"] is True
+        expect = ExpectColumnValuesToBeInSet(column=column_name, value_set=["a"])
 
-    def test_missing_configure_expectations_raises_value_error(self):
-        """Expect that omitting both 'configure_expectations' and deprecated 'expect' raises ValueError."""
+        # act & assert
+        with pytest.raises(
+            (AirflowException, TypeError), match="Invalid arguments were passed"
+        ) as exc_info:
+            GXValidateBatchOperator(
+                task_id="validate_batch_expect",
+                configure_batch_definition=configure_ephemeral_batch_definition,
+                configure_expectations=configure_expectations,
+                expect=expect,
+                batch_parameters={"dataframe": pd.DataFrame()},
+            )
+        assert "'expect'" in str(exc_info.value)
+
+    def test_expect_parameter_without_configure_expectations_is_rejected(self):
+        """Expect that a 1.x style call passing only 'expect' fails at construction."""
+
+        # arrange
+        def configure_ephemeral_batch_definition(
+            context: AbstractDataContext,
+        ) -> BatchDefinition:
+            return (
+                context.data_sources.add_pandas(name="test datasource")
+                .add_dataframe_asset("test asset")
+                .add_batch_definition_whole_dataframe("test batch def")
+            )
+
+        expect = ExpectColumnValuesToBeInSet(column="col_A", value_set=["a"])
+
+        # act & assert
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
+        ):
+            GXValidateBatchOperator(  # type: ignore[call-arg]
+                task_id="validate_batch_expect_only",
+                configure_batch_definition=configure_ephemeral_batch_definition,
+                expect=expect,
+                batch_parameters={"dataframe": pd.DataFrame()},
+            )
+
+    def test_missing_configure_expectations_is_rejected(self):
+        """Expect that omitting 'configure_expectations' fails at construction."""
 
         # arrange
         def configure_ephemeral_batch_definition(
@@ -532,8 +560,11 @@ class TestValidateBatchOperator:
             )
 
         # act & assert
-        with pytest.raises(ValueError, match="configure_expectations is required"):
-            GXValidateBatchOperator(
+        with pytest.raises(
+            (AirflowException, TypeError),
+            match="missing keyword argument 'configure_expectations'",
+        ):
+            GXValidateBatchOperator(  # type: ignore[call-arg]
                 task_id="validate_batch_missing",
                 configure_batch_definition=configure_ephemeral_batch_definition,
                 batch_parameters={"dataframe": pd.DataFrame()},
