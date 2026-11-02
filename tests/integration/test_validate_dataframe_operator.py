@@ -3,16 +3,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 from unittest.mock import Mock
 
+import great_expectations as gx
 import pandas as pd
 import pytest
 from great_expectations import ExpectationSuite
 from great_expectations.expectations import ExpectColumnValuesToBeInSet
 
 from great_expectations_provider.common.errors import GXValidationFailed
+from great_expectations_provider.operators import validate_dataframe
 from great_expectations_provider.operators.validate_dataframe import (
     GXValidateDataFrameOperator,
 )
-from tests.integration.conftest import is_valid_gx_cloud_url, rand_name
+from tests.integration.conftest import rand_name
 
 if TYPE_CHECKING:
     from airflow.utils.context import Context
@@ -23,65 +25,13 @@ if TYPE_CHECKING:
 
 class TestGXValidateDataFrameOperator:
     @pytest.mark.integration
-    def test_validate_dataframe_with_cloud(
-        self,
-        ensure_data_source_cleanup: Callable[[str], None],
-        ensure_suite_cleanup: Callable[[str], None],
-        ensure_validation_definition_cleanup: Callable[[str], None],
-    ) -> None:
-        # arrange
-        column_name = "col_A"
-        task_id = f"test_validate_dataframe_with_cloud_{rand_name()}"
-
-        def configure_dataframe() -> pd.DataFrame:
-            return pd.DataFrame({column_name: ["a", "b", "c"]})
-
-        ensure_data_source_cleanup(task_id)
-        ensure_suite_cleanup(task_id)
-        ensure_validation_definition_cleanup(task_id)
-
-        def configure_expectations_suite(
-            context: AbstractDataContext,
-        ) -> ExpectationSuite:
-            return context.suites.add(
-                ExpectationSuite(
-                    name=task_id,
-                    expectations=[
-                        ExpectColumnValuesToBeInSet(
-                            column=column_name,
-                            value_set=["a", "b", "c", "d", "e"],  # type: ignore[arg-type]
-                        ),
-                    ],
-                )
-            )
-
-        validate_df = GXValidateDataFrameOperator(
-            context_type="cloud",
-            task_id=task_id,
-            configure_dataframe=configure_dataframe,
-            configure_expectations=configure_expectations_suite,
-        )
-        mock_ti = Mock()
-
-        # act
-        validate_df.execute(context={"ti": mock_ti})
-
-        # assert
-        # Get the result from xcom_push call
-        pushed_result = mock_ti.xcom_push.call_args[1]["value"]
-        assert pushed_result["success"] is True
-        assert is_valid_gx_cloud_url(pushed_result["result_url"])
-
-    @pytest.mark.integration
     def test_multiple_runs(
         self,
-        ensure_data_source_cleanup: Callable[[str], None],
-        ensure_suite_cleanup: Callable[[str], None],
-        ensure_validation_definition_cleanup: Callable[[str], None],
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test to ensure we don't error when running multiple times.
 
-        This validates that both the add_* and update_* code paths work."""
+        This validates that both the add_* and existing-object paths work."""
         # arrange
         column_name = "col_A"
         task_id = f"test_validate_dataframe_multiple_{rand_name()}"
@@ -89,9 +39,12 @@ class TestGXValidateDataFrameOperator:
         def configure_dataframe() -> pd.DataFrame:
             return pd.DataFrame({column_name: ["a", "b", "c"]})
 
-        ensure_data_source_cleanup(task_id)
-        ensure_suite_cleanup(task_id)
-        ensure_validation_definition_cleanup(task_id)
+        gx_context = gx.get_context(mode="ephemeral")
+        monkeypatch.setattr(
+            validate_dataframe,
+            "load_data_context",
+            lambda: gx_context,
+        )
 
         def configure_expectations_suite(
             context: AbstractDataContext,
@@ -109,7 +62,6 @@ class TestGXValidateDataFrameOperator:
             )
 
         validate_df = GXValidateDataFrameOperator(
-            context_type="cloud",
             task_id=task_id,
             configure_dataframe=configure_dataframe,
             configure_expectations=configure_expectations_suite,
@@ -121,6 +73,7 @@ class TestGXValidateDataFrameOperator:
 
         # act
         validate_df.execute(context=context_a)
+        assert gx_context.data_sources.get(name=task_id)
         validate_df.execute(context=context_b)
 
         # assert
@@ -227,7 +180,6 @@ class TestGXValidateDataFrameOperator:
             task_id=task_id,
             configure_dataframe=configure_dataframe,
             configure_expectations=configure_expectations,
-            context_type="ephemeral",
         )
 
         # act & assert
@@ -259,7 +211,6 @@ class TestGXValidateDataFrameOperator:
             task_id=task_id,
             configure_dataframe=configure_dataframe,
             configure_expectations=configure_expectations,
-            context_type="ephemeral",
         )
         mock_ti = Mock()
 

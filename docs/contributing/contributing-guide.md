@@ -83,22 +83,17 @@ Test with `pytest`:
 Tests are organized into two categories:
 
 - **Unit tests** (`tests/unit/`): Run without external dependencies and don't require credentials.
-- **Integration tests** (`tests/integration/`): Require GX Cloud credentials and optionally external backends (e.g., Postgres, Spark).
+- **Integration tests** (`tests/integration/`): Need no credentials. Some selections need an external backend (Postgres, Spark), described below.
 
 To run only unit tests:
 ```bash
 pytest tests/unit
 ```
 
-To run integration tests locally, set the required environment variables:
+To run integration tests locally:
 ```bash
-export GX_CLOUD_ORGANIZATION_ID="your-org-id"
-export GX_CLOUD_WORKSPACE_ID="your-workspace-id"
-export GX_CLOUD_ACCESS_TOKEN="your-access-token"
 pytest -m integration tests/integration
 ```
-
-For details on the test organization used in CI (and how to get access), see [CI_SECRETS.md](https://github.com/great-expectations/airflow-provider-great-expectations/blob/main/CI_SECRETS.md).
 
 ### Running postgres tests
 

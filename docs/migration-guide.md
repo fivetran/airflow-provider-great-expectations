@@ -1,6 +1,6 @@
 # Migration guide
 
-This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider.
+This guide will help you migrate from V0 to V1 of the Great Expectations Airflow Provider. If you are upgrading from 1.x and used GX Cloud, `conn_id`, or `context_type`, see [Upgrade from 1.x to 2.0: GX Cloud removal](#upgrade-from-1x-to-20-gx-cloud-removal).
 
 Here is an overview of key differences between versions:
 
@@ -8,10 +8,10 @@ Here is an overview of key differences between versions:
 |---|---|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Operators | `GreatExpectationsOperator` | `GXValidateDataFrameOperator`<br>`GXValidateBatchOperator`<br>`GXValidateCheckpointOperator`                                                          |
 | GX version | 0.18 and earlier | 1.7.0 and later                                                                                                                                       |
-| Data Contexts | File | Ephemeral<br>Cloud<br>File (`GXValidateCheckpointOperator` only)                                                                                      |
+| Data Contexts | File | Ephemeral<br>File (`GXValidateCheckpointOperator` only)                                                                                      |
 | Response handling | By default, any Expectation failure raises an `AirflowException`. To override this behavior and continue running the pipeline even if tests fail, you can set the `fail_task_on_validation_failure` flag to `False`. | Regardless of Expectation failure or success, a Validation Result is made available to subsequent tasks, which can decide what to do with the result. |
 
-For guidance on which Operator and Data Context best fit your needs, see [Operator use cases](getting-started.md/#operator-use-cases). Note that while File Data Contexts are still supported with `GXValidateCheckpointOperator`, they require extra configuration and can be challenging to use when Airflow is running in a distributed environment. Most uses of the legacy `GreatExpectationsOperator` can now be satisfied with an Ephemeral or Cloud Data Context with either the `GXValidateDataFrameOperator` or the `GXValidateBatchOperator` to minimize configuration.
+For guidance on which Operator and Data Context best fit your needs, see [Operator use cases](getting-started.md/#operator-use-cases). Note that while File Data Contexts are still supported with `GXValidateCheckpointOperator`, they require extra configuration and can be challenging to use when Airflow is running in a distributed environment. Most uses of the legacy `GreatExpectationsOperator` can now be satisfied with an Ephemeral Data Context with either the `GXValidateDataFrameOperator` or the `GXValidateBatchOperator` to minimize configuration.
 
 ## Switch to the new Data Frame or Batch Operator (recommended)
 
@@ -155,6 +155,37 @@ my_batch_operator = GXValidateBatchOperator(
     task_id="my_batch_operator",
     configure_batch_definition=configure_batch_definition,
     configure_expectations=configure_expectations,
-    context_type="ephemeral",
 )
 ```
+
+## Upgrade from 1.x to 2.0: GX Cloud removal
+
+GX Cloud stopped being publicly available on 2026-06-01, and Great Expectations (GX) 1.18 and later raise an error for Cloud Data Contexts. Provider 2.0 removes the `great_expectations_provider.hooks.gx_cloud` module and its `GXCloudHook`, `GXCloudConfig`, and `IncompleteGXCloudConfigError` classes, as well as the `gx_cloud` connection type. It also removes the `conn_id` parameter from all three operators and the `context_type` parameter from `GXValidateBatchOperator` and `GXValidateDataFrameOperator`; those operators always use an Ephemeral Data Context. `GXValidateCheckpointOperator` no longer accepts the `"cloud"` value for `context_type`.
+
+### What to change
+
+| 1.x usage | 2.0 action |
+|---|---|
+| `conn_id=` on any operator | Delete the argument. |
+| `context_type=` on `GXValidateBatchOperator` or `GXValidateDataFrameOperator` | Delete the argument. |
+| `context_type="cloud"` on `GXValidateCheckpointOperator` | Use `"ephemeral"` (the default), or use `"file"` with `configure_file_data_context`. |
+| `conn_id` or `context_type` in `default_args` | Delete those keys. Airflow silently ignores `default_args` keys an operator does not accept; `GXValidateCheckpointOperator` validates `context_type`. |
+| `gx_cloud` Airflow connections | Delete the connections. |
+| `GX_CLOUD_*` variables in the Airflow environment | Remove the variables. The operators ignore them, but your own callables that call `gx.get_context()` without a `mode` raise while they are set. |
+| Imports from `great_expectations_provider.hooks.gx_cloud` | Delete the imports. |
+
+### Errors you will see if you do not migrate
+
+At DAG parse, Airflow reports `TypeError` on Airflow 3 or `AirflowException` on Airflow 2 for invalid operator arguments. The message begins `Invalid arguments were passed to <Operator>` and includes the invalid values under `**kwargs`: `{…}`. This applies to `conn_id` on any operator and `context_type` on the batch or DataFrame operator.
+
+For an unsupported checkpoint `context_type`, construction raises `ValueError` with this message (where the received value is shown):
+
+```text
+Parameter `context_type` must be 'ephemeral' or 'file', got 'cloud'
+```
+
+Importing the removed hook module raises `ModuleNotFoundError`.
+
+### Keeping validation results
+
+To keep persistent results and view them in Data Docs, use a File Data Context with `GXValidateCheckpointOperator`; see the [File Data Context setup step](getting-started.md#checkpoint-operator). You can also read the operator's XCom `return_value` in a downstream task. Results no longer include a GX Cloud link.
