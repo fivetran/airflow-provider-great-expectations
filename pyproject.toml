@@ -80,6 +80,10 @@ include = ["/great_expectations_provider"]
 [tool.hatch.build.targets.wheel]
 packages = ["/great_expectations_provider"]
 
+# The Airflow tier flags (AIRFLOW_V_3_0_PLUS, AIRFLOW_V_3_1_PLUS) are passed to mypy on the
+# command line, once per tier, with --always-true/--always-false. Do not set always_true or
+# always_false here: mypy adds command-line values to these lists and exits with an error when
+# a name ends up both always true and always false.
 [tool.mypy]
 exclude = ["env/", ".env/","venv/", ".venv/", "build/"]
 follow_untyped_imports = true
