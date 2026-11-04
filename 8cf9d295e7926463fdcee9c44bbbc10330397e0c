@@ -1,0 +1,25 @@
+great_expectations_provider/example_dags/example_great_expectations_dag.py
+  f0c4d0313f23d918 115-117
+great_expectations_provider/example_dags/example_dag_with_batch_parameters.py
+  f0c4d0313f23d918 131-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "8cf9d295e7926463fdcee9c44bbbc10330397e0c",
+  "prompts": {
+    "f0c4d0313f23d918": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cf04d82-0aac-40b8-8654-b4b37e413cd0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 6,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
