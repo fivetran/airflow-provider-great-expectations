@@ -12,7 +12,7 @@ authors = [
 ]
 license = "Apache-2.0"
 license-files = { paths = ["LICENSE"] }
-requires-python = ">3.9, <3.14"
+requires-python = ">=3.11"
 keywords = ["airflow", "great expectations", "provider"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -23,39 +23,40 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13"
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14"
 ]
 dependencies = [
-    "great-expectations>=1.7.0, <2",
-    "apache-airflow>=2.1, <4",
-    "structlog<25.5.0",  # airflow <3.1.3 imports Styles removed in 25.5.0
+    "great-expectations>=1.23.2,<2",
+    "great-expectations>=1.24.0,<2; python_version>='3.14'",
+    "apache-airflow>=2.11.0,<4",
 ]
 
 [project.optional-dependencies]
-athena = ["great-expectations[athena]>=1.7.0, <2"]
-azure = ["great-expectations[azure]>=1.7.0, <2"]
-bigquery = ["great-expectations[bigquery]>=1.7.0, <2"]
+athena = ["great-expectations[athena]>=1.23.2,<2"]
+azure = ["great-expectations[azure]>=1.23.2,<2"]
+bigquery = ["great-expectations[bigquery]>=1.23.2,<2"]
 lint = [
     "mypy==1.14.1",
     "ruff==0.8.3",
     "pytest==8.3.4",
     "pytest-mock==3.14.0",
-    "great-expectations[spark, spark-connect]>=1.7.0, <2"
+    "great-expectations[spark, spark-connect]>=1.23.2,<2"
 ]
-gcp = ["great-expectations[gcp]>=1.7.0, <2"]
-mssql = ["great-expectations[mssql]>=1.7.0, <2"]
-postgresql = ["great-expectations[postgresql]>=1.7.0, <2"]
-s3 = ["great-expectations[s3]>=1.7.0, <2"]
-snowflake = ["great-expectations[snowflake]>=1.7.0, <2"]
+gcp = ["great-expectations[gcp]>=1.23.2,<2"]
+mssql = ["great-expectations[sql-server]>=1.23.2,<2"]
+postgresql = ["great-expectations[postgresql]>=1.23.2,<2"]
+s3 = ["great-expectations[s3]>=1.23.2,<2"]
+snowflake = ["great-expectations[snowflake]>=1.23.2,<2"]
 spark = [
-    "great-expectations[spark, spark-connect]>=1.7.0, <2",
+    "great-expectations[spark, spark-connect]>=1.23.2,<2",
     "pyarrow>=4.0.0",
     "setuptools",  # pyspark needs distutils, removed in Python 3.12
 ]
-trino = ["great-expectations[trino]>=1.7.0, <2"]
+sql-server = ["great-expectations[sql-server]>=1.23.2,<2"]
+trino = ["great-expectations[trino]>=1.23.2,<2"]
 tests = [
     "pytest==8.3.4",
     "pytest-mock==3.14.0"
