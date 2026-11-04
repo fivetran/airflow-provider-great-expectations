@@ -32,9 +32,11 @@ Setting up a local development environment involves fulfilling requirements, get
 ### Requirements
 
 - [Git](https://git-scm.com/)
-- [Python](https://www.python.org/) version 3.10 to 3.13
-- [Great Expectations](https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/install_gx) version 1.7.0+
-- [Apache Airflow®](https://airflow.apache.org/) version 2.1.0+
+- [Python](https://www.python.org/) version 3.11 or later, as your Airflow version allows
+- [Great Expectations](https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/install_gx) version 1.23.2+ (1.24.0+ on Python 3.14)
+- [Apache Airflow®](https://airflow.apache.org/) version 2.11.0+ and below 4
+
+See [Compatibility](../compatibility.md) for the tested versions and the support policy.
 
 ### Get a copy of the repository
 
@@ -118,6 +120,27 @@ docker compose -f docker/spark/docker-compose.yml up -d
 pytest -m spark_integration tests/integration
 pytest -m spark_connect_integration tests/integration
 ```
+
+### Type checking
+
+The provider supports three groups of Airflow releases that have different type definitions: Airflow 2.11, Airflow 3.0, and Airflow 3.1 and later. `great_expectations_provider/version_compat.py` imports Airflow from a different place for each group and selects the imports with the `AIRFLOW_V_3_0_PLUS` and `AIRFLOW_V_3_1_PLUS` flags. CI runs `mypy` once for each group, and you can do the same locally:
+
+1. Create a virtual environment for the Airflow release you want to check. The [compatibility page](../compatibility.md#supported-versions) lists the release that CI tests for each group.
+2. Install the `lint` extra in that environment, together with the Airflow release and its constraints file. Replace `<Airflow version>` with that release and `<python version>` with the major and minor version of your Python, such as `3.11`. See [Install with constraints](../compatibility.md#install-with-constraints). The `lint` extra pins its own versions of `mypy`, `ruff`, `pytest` and `pytest-mock`, which differ from the versions in Airflow's constraints file, so first download the constraints file and remove those four pins. Keep the `apache-airflow` pin. The command writes `constraints.txt`; don't commit it.
+   ```bash
+   curl -fsSL "https://raw.githubusercontent.com/apache/airflow/constraints-<Airflow version>/constraints-<python version>.txt" | grep -v -E '^(mypy|ruff|pytest|pytest-mock)==' > constraints.txt
+   pip install -e '.[lint]' "apache-airflow==<Airflow version>" --constraint constraints.txt
+   ```
+
+Then run the command for your Airflow release. The flags tell `mypy` which branches of `version_compat.py` to check.
+
+| Airflow version | Command |
+|-----------------|---------|
+| 2.11 | `mypy --always-false AIRFLOW_V_3_0_PLUS --always-false AIRFLOW_V_3_1_PLUS .` |
+| 3.0 | `mypy --always-true AIRFLOW_V_3_0_PLUS --always-false AIRFLOW_V_3_1_PLUS .` |
+| 3.1 and later | `mypy --always-true AIRFLOW_V_3_0_PLUS --always-true AIRFLOW_V_3_1_PLUS .` |
+
+Always pass the flags for the Airflow release you installed. If you run `mypy .` without them, `mypy` checks every branch of `version_compat.py` against a single Airflow release and reports errors from the branches that belong to other releases. Don't add the flags to `pyproject.toml`: `mypy` adds command-line flags to the values in the configuration file, and it exits with an error when a flag name is both always true and always false, so a default in the file would break the runs for the other releases.
 
 
 ## Write docs
