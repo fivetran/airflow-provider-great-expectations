@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Literal
 
-from airflow.models import BaseOperator
 from great_expectations.datasource.fluent import PandasDatasource, SparkDatasource
 
 from great_expectations_provider.common.errors import GXValidationFailed
@@ -13,16 +12,18 @@ from great_expectations_provider.common.gx_context_actions import (
 from great_expectations_provider.exceptions.exceptions import (
     ExistingDataSourceTypeMismatch,
 )
+from great_expectations_provider.version_compat import BaseOperator
 
 if TYPE_CHECKING:
     import pyspark.sql as pyspark
-    from airflow.utils.context import Context
     from great_expectations import ExpectationSuite
     from great_expectations.core.batch_definition import BatchDefinition
     from great_expectations.data_context import AbstractDataContext
     from great_expectations.expectations import Expectation
     from pandas import DataFrame
     from pyspark.sql.connect.dataframe import DataFrame as SparkConnectDataFrame
+
+    from great_expectations_provider.version_compat import Context
 
 
 class GXValidateDataFrameOperator(BaseOperator):

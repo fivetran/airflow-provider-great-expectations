@@ -1,24 +1,24 @@
+"""Example Airflow DAG that passes batch parameters to its operators as DAG params.
+
+The batch and checkpoint operators read ``gx_batch_parameters`` from the DAG's
+params, so the batch they validate can be chosen when the DAG is triggered.
+
+This example takes ``DAG`` and ``chain`` from the provider's ``version_compat``
+module, so that it loads on every Airflow version the provider supports. In your
+own DAGs on Airflow 3, import them from ``airflow.sdk``; on Airflow 2.11, import
+them from Airflow's ``airflow.models`` modules.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from airflow import DAG
-
-try:  # airflow 3
-    from airflow.sdk import task
-    from airflow.sdk.bases.operator import chain
-except ImportError:  # airflow 2
-    from airflow.decorators import task  # type: ignore[attr-defined,no-redef]
-    from airflow.models.baseoperator import (  # type: ignore[import-not-found,no-redef]
-        chain,
-    )
-
-
 from great_expectations_provider.operators.validate_batch import GXValidateBatchOperator
 from great_expectations_provider.operators.validate_checkpoint import (
     GXValidateCheckpointOperator,
 )
+from great_expectations_provider.version_compat import DAG, chain
 
 if TYPE_CHECKING:
     from great_expectations import Checkpoint, ExpectationSuite
@@ -128,13 +128,14 @@ def configure_expectations_suite(context: AbstractDataContext) -> ExpectationSui
 # operator through the context. Users can still provide batch_parameters on operator init
 # (critical for validating data frames), but batch_parameters provided as DAG params should take precedence.
 # To demo validation failure, use FAILURE_MONTH as a batch parameter instead of SUCCESS_MONTH
-SUCCESS_MONTH = "01"
-FAILURE_MONTH = "02"
-_batch_parameters = {"year": "2019", "month": SUCCESS_MONTH}
+SUCCESS_MONTH = 1
+FAILURE_MONTH = 2
+_batch_parameters = {"year": 2019, "month": SUCCESS_MONTH}
 
 
 with DAG(
     dag_id="gx_provider_example_dag_with_batch_parameters",
+    schedule=None,
     params={
         "gx_batch_parameters": _batch_parameters,
     },

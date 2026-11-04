@@ -17,10 +17,11 @@ from great_expectations_provider.operators.validate_dataframe import (
 from tests.integration.conftest import rand_name
 
 if TYPE_CHECKING:
-    from airflow.utils.context import Context
     from great_expectations.data_context import AbstractDataContext
     from pyspark.sql import SparkSession
     from pyspark.sql.connect.session import SparkSession as SparkConnectSession
+
+    from great_expectations_provider.version_compat import Context
 
 
 class TestGXValidateDataFrameOperator:

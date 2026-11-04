@@ -1,17 +1,18 @@
+"""Example Airflow DAG that validates the sample taxi data three ways.
+
+The DAG runs a batch validation, a DataFrame validation and a checkpoint
+validation in sequence, with one operator for each.
+
+This example takes ``DAG`` and ``chain`` from the provider's ``version_compat``
+module, so that it loads on every Airflow version the provider supports. In your
+own DAGs on Airflow 3, import them from ``airflow.sdk``; on Airflow 2.11, import
+them from Airflow's ``airflow.models`` modules.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-from airflow import DAG
-
-try:
-    from airflow.sdk.bases.operator import chain
-except ImportError:
-    from airflow.models.baseoperator import (  # type: ignore[import-not-found,no-redef]
-        chain,
-    )
-
 
 from great_expectations_provider.operators.validate_batch import GXValidateBatchOperator
 from great_expectations_provider.operators.validate_checkpoint import (
@@ -20,6 +21,7 @@ from great_expectations_provider.operators.validate_checkpoint import (
 from great_expectations_provider.operators.validate_dataframe import (
     GXValidateDataFrameOperator,
 )
+from great_expectations_provider.version_compat import DAG, chain
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -110,9 +112,9 @@ def configure_checkpoint(context: AbstractDataContext) -> Checkpoint:
 
 
 # To demo validation failure, use FAILURE_MONTH as a batch parameter instead of SUCCESS_MONTH
-SUCCESS_MONTH = "01"
-FAILURE_MONTH = "02"
-batch_parameters = {"year": "2019", "month": SUCCESS_MONTH}
+SUCCESS_MONTH = 1
+FAILURE_MONTH = 2
+batch_parameters = {"year": 2019, "month": SUCCESS_MONTH}
 
 
 def configure_expectations_suite(context: AbstractDataContext) -> ExpectationSuite:
@@ -140,6 +142,7 @@ def configure_expectations_suite(context: AbstractDataContext) -> ExpectationSui
 
 with DAG(
     dag_id="gx_provider_example_dag",
+    schedule=None,
 ) as dag:
     validate_extract = GXValidateBatchOperator(
         task_id="validate_extract",

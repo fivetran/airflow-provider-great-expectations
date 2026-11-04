@@ -8,16 +8,9 @@ from pathlib import Path
 from typing import Literal, Optional, Union
 from urllib.parse import quote_plus, urlencode
 
-try:  # airflow 3
-    from airflow.sdk import BaseHook
-    from airflow.sdk.definitions.connection import Connection
-except ImportError:  # airflow 2
-    from airflow.hooks.base import BaseHook  # type: ignore[attr-defined,no-redef]
-    from airflow.models import (  # type: ignore[attr-defined,no-redef,assignment]
-        Connection,
-    )
-
 from pydantic import BaseModel, Field
+
+from great_expectations_provider.version_compat import BaseHook, Connection
 
 logger = logging.getLogger(__name__)
 

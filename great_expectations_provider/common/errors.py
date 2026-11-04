@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from airflow.exceptions import AirflowException
+from great_expectations_provider.version_compat import AirflowException
 
 if TYPE_CHECKING:
     from great_expectations.checkpoint.checkpoint import CheckpointDescriptionDict
