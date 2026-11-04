@@ -5,7 +5,6 @@ from unittest.mock import Mock, create_autospec
 
 import pandas as pd
 import pytest
-from airflow.exceptions import AirflowException
 from great_expectations import ExpectationSuite
 from great_expectations.core import ExpectationValidationResult
 from great_expectations.data_context import AbstractDataContext, EphemeralDataContext
@@ -23,9 +22,10 @@ from great_expectations_provider.common.errors import GXValidationFailed
 from great_expectations_provider.operators.validate_dataframe import (
     GXValidateDataFrameOperator,
 )
+from great_expectations_provider.version_compat import AirflowException
 
 if TYPE_CHECKING:
-    from airflow.utils.context import Context
+    from great_expectations_provider.version_compat import Context
 
 pytestmark = pytest.mark.unit
 

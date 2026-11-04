@@ -22,9 +22,11 @@ The `GXValidateDataFrameOperator` and `GXValidateBatchOperator` use an Ephemeral
 
 ## Prerequisites
 
-- [Python](https://www.python.org/) version 3.10 to 3.13
-- [Great Expectations](https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/install_gx) version 1.7.0+
-- [Apache Airflow®](https://airflow.apache.org/) version 2.1.0+
+- [Python](https://www.python.org/) version 3.11 or later, as your Airflow version allows
+- [Great Expectations](https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/install_gx) version 1.23.2+ (1.24.0+ on Python 3.14)
+- [Apache Airflow®](https://airflow.apache.org/) version 2.11.0+ and below 4
+
+See [Compatibility](compatibility.md) for the tested versions and the support policy. If you run Airflow 2.10 or older, or Python 3.10, stay on provider 1.0.0.
 
 ## Assumed knowledge
 
@@ -37,26 +39,27 @@ To get the most out of this getting started guide, make sure you have an underst
 
 ## Install the provider and dependencies
 
-1. Install the provider.
+1. Install the provider. Pin your Airflow version in the same command, so that the install can't change it, and pass Airflow's constraints file. Replace `<your version>` with your Airflow version and `<python version>` with the major and minor version of your Python, such as `3.11`. Some Airflow releases require the constraints file. See [Install with constraints](compatibility.md#install-with-constraints).
 
    ```bash
-   pip install airflow-provider-great-expectations
+   pip install "apache-airflow==<your version>" "airflow-provider-great-expectations" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-<your version>/constraints-<python version>.txt"
    ```
-2. (Optional) Install additional dependencies for the data sources you’ll use. For example, to install the optional Snowflake dependency, use the following command.
+2. (Optional) Install additional dependencies for the data sources you’ll use. For example, to install the optional Snowflake dependency, use the following command, which pins Airflow and passes the constraints file the same way. See [Install with constraints](compatibility.md#install-with-constraints).
 
    ```bash
-   pip install "airflow-provider-great-expectations[snowflake]"
+   pip install "apache-airflow==<your version>" "airflow-provider-great-expectations[snowflake]" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-<your version>/constraints-<python version>.txt"
    ```
    The following backends are supported as optional dependencies:
     - `athena`
     - `azure`
     - `bigquery`
     - `gcp`
-    - `mssql`
+    - `mssql` (the same extra as `sql-server`)
     - `postgresql`
     - `s3`
     - `snowflake`
     - `spark`
+    - `sql-server`
     - `trino`
 
 ## Configure an Operator

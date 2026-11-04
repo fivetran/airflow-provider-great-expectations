@@ -2,21 +2,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Literal
 
-from airflow.models import BaseOperator
-
 from great_expectations_provider.common.errors import GXValidationFailed
 from great_expectations_provider.common.gx_context_actions import (
     load_data_context,
     run_validation_definition,
 )
+from great_expectations_provider.version_compat import BaseOperator
 
 if TYPE_CHECKING:
-    from airflow.utils.context import Context
     from great_expectations import ExpectationSuite
     from great_expectations.core.batch import BatchParameters
     from great_expectations.core.batch_definition import BatchDefinition
     from great_expectations.data_context import AbstractDataContext
     from great_expectations.expectations import Expectation
+
+    from great_expectations_provider.version_compat import Context
 
 
 class GXValidateBatchOperator(BaseOperator):

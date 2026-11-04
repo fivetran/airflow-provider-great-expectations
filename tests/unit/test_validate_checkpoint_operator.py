@@ -16,7 +16,7 @@ from great_expectations_provider.operators.validate_checkpoint import (
 )
 
 if TYPE_CHECKING:
-    from airflow.utils.context import Context
+    from great_expectations_provider.version_compat import Context
 pytestmark = pytest.mark.unit
 
 

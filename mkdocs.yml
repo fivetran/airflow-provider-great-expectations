@@ -45,6 +45,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Compatibility: compatibility.md
   - Examples: examples.md
   - Migration guide: migration-guide.md
   - Contributing:

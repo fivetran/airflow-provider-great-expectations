@@ -1,0 +1,14 @@
+{
+  "recorded": "2026-11-02",
+  "uv": "0.11.24",
+  "lane": {
+    "airflow": "3.3.2",
+    "python": "3.11"
+  },
+  "extra": "postgresql",
+  "command": "uv pip compile <requirements> --constraint <filtered constraints> --python-version 3.11 --python-platform x86_64-manylinux_2_28 --no-header --no-annotate",
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "  \u00d7 No solution found when resolving dependencies:\n  \u2570\u2500\u25b6 Because airflow-provider-great-expectations==1.0.0 depends on\n      structlog<25.5.0 and structlog==26.1.0, we can conclude that\n      airflow-provider-great-expectations==1.0.0 cannot be used.\n      And because only airflow-provider-great-expectations[postgresql]==1.0.0\n      is available and you require\n      airflow-provider-great-expectations[postgresql], we can conclude that\n      your requirements are unsatisfiable.\n",
+  "note": "recorded unchanged"
+}

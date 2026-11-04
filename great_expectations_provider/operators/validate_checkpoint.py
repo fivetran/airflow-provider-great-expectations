@@ -3,18 +3,18 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING, Callable, Generator, Literal, cast
 
-from airflow.models import BaseOperator
-
 from great_expectations_provider.common.constants import USER_AGENT_STR
 from great_expectations_provider.common.errors import GXValidationFailed
 from great_expectations_provider.common.gx_context_actions import load_data_context
+from great_expectations_provider.version_compat import BaseOperator
 
 if TYPE_CHECKING:
-    from airflow.utils.context import Context
     from great_expectations import Checkpoint
     from great_expectations.checkpoint.checkpoint import CheckpointDescriptionDict
     from great_expectations.core.batch import BatchParameters
     from great_expectations.data_context import AbstractDataContext, FileDataContext
+
+    from great_expectations_provider.version_compat import Context
 
 
 class GXValidateCheckpointOperator(BaseOperator):

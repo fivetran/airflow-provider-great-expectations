@@ -4,9 +4,9 @@ This document describes how CI environments gate access to repository secrets.
 
 ## GitHub Environments
 
-The CI workflow uses two GitHub environments to control access to secrets:
+The test workflows use no secrets and no environments, so a pull request, including one from a fork, runs them with a read-only token and nothing to expose. Two environments remain, each serving one workflow:
 
-- **internal**: Used for PRs from branches within the repository (has access to secrets)
-- **external**: Used for PRs from forks (requires manual approval before secrets are accessible)
+- **`pypi`**: serves publishing. The publish job in `ci.yaml` runs in it when a release is published, and it publishes by PyPI trusted publishing, so it holds no stored token.
+- **`notifications`**: serves Slack. The jobs in `slack-notifications.yml` run in it and read the Slack bot token (`SLACK_BOT_TOKEN`) from it.
 
-This protects secrets from being exposed in PRs from untrusted forks.
+The [CI guide](.github/CI.md) has the details, including the repository settings to check.
