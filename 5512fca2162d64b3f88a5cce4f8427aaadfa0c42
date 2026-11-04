@@ -1,0 +1,27 @@
+great_expectations_provider/version_compat.py
+  f0c4d0313f23d918 1-93
+pyproject.toml
+  f0c4d0313f23d918 83-86
+tests/unit/test_version_compat.py
+  f0c4d0313f23d918 1-95,97,99-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "5512fca2162d64b3f88a5cce4f8427aaadfa0c42",
+  "prompts": {
+    "f0c4d0313f23d918": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cf04d82-0aac-40b8-8654-b4b37e413cd0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Josh Stauffer <66793731+joshua-stauffer@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 208,
+      "total_deletions": 2,
+      "accepted_lines": 204,
+      "overriden_lines": 2
+    }
+  }
+}
